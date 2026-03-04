@@ -1,72 +1,61 @@
-# Campus Placement Management System (CPMS)
+# HireHub - Campus Placement Management System (CPMS)
 
-A full-stack placement management platform built with Node.js, Express, MongoDB, Next.js, and Tailwind CSS.
+HireHub is a comprehensive, full-stack placement management platform designed to streamline the campus recruitment process. Built with modern web technologies, it offers a secure, highly concurrent, and mobile-responsive experience for Students, Companies, Staff, and Administrators.
 
-## Features
-- **Authentication**: JWT-based auth with Role-Based Access Control (Admin, Staff, Company, Student).
-- **Dashboard**: Real-time statistics on placements.
-- **Student Management**: Track student details and placement status.
-- **Company Management**: Manage companies and interview rounds.
-- **Resources**: Share and access preparation materials.
-- **Audit Logs**: Comprehensive logging of all actions.
+## 🚀 Key Features
+- **Role-Based Access Control (RBAC)**: Secure access for Admin, Staff, Company, and Student roles with fine-grained permissions.
+- **High Concurrency Stability**: Engineered with Node.js clustering and connection pooling to handle 10,000+ simultaneous connections during peak registration events.
+- **Mobile-First Design**: Fully responsive UI featuring off-canvas navigation tabs, fluid data tables, and adaptive messaging layouts for seamless use on any device.
+- **End-to-End Encrypted Messaging**: Secure direct messaging and announcements using RSA encryption.
+- **Advanced Security Architecture**: Hardened with 3-tier rate limiting, CSRF protection, comprehensive input sanitization, and strict environment variable enforcement.
+- **Real-Time Dashboards & Analytics**: Insightful statistics and charts for monitoring placement drives and application statuses.
+- **Resource Management**: Secure AWS S3 integration for sharing preparation materials and managing student resumes.
 
-## Tech Stack
-- **Backend**: Node.js, Express, Mongoose, MongoDB
-- **Frontend**: Next.js 14, React, Tailwind CSS, Lucide Icons, Shadcn UI (Custom implementation)
-- **Database**: MongoDB Atlas (or local)
+## 🛠 Tech Stack
+- **Frontend**: Next.js 14, React 19, Tailwind CSS v4, Shadcn UI, Framer Motion
+- **Backend**: Node.js, Express, AWS SDK (DynamoDB & S3), Clustering
+- **Database**: Amazon DynamoDB
+- **Storage**: Amazon S3
+- **Security**: Helmet, Express Rate Limit, CSRF, DOMPurify, Bcrypt, JWT
 
-## Getting Started
+## 🏁 Getting Started
 
 ### Prerequisites
-- Node.js installed
-- MongoDB installed or Atlas URI
+- Node.js (v18 or higher)
+- AWS Account with DynamoDB and S3 bucket configured
 
-### Installation
+### Installation & Setup
 
-1. **Install Dependencies**
+1. **Clone the repository**
    ```bash
-   # Install backend dependencies
-   npm install
-
-   # Install frontend dependencies (automatically handled by concurrently script if needed, or run separately)
-   cd frontend
-   npm install
-   cd ..
+   git clone https://github.com/AstraDev-Labs/HireHub.git
+   cd HireHub
    ```
 
-2. **Environment Configuration**
+2. **Install Dependencies**
+   ```bash
+   npm install
+   cd frontend && npm install && cd ..
+   ```
+
+3. **Environment Configuration**
    - Copy `.env.example` to `.env` in the root directory.
-   - Update `SYSTEM_DB_URI` and `LOGS_DB_URI` with your MongoDB connection strings.
-   - Frontend uses `http://localhost:5000/api` by default.
+   - Configure your AWS credentials, JWT secrets, and Email settings.
+   - **Crucial**: Set `NEXT_PUBLIC_API_URL` and `FRONTEND_URL` to your production URLs before deploying.
 
-3. **Seed Database (Optional)**
-   Populate the database with initial data (Admin, Student, Company).
-   ```bash
-   npm run seed
-   ```
-   **Default Credentials:**
-   - Admin: `admin@cpms.com` / `password123`
-   - Student: `student@test.com` / `password123`
-   - Staff: `staff@test.com` / `password123`
+4. **Running the Application**
+   - **Development**: Run both backend and frontend concurrently:
+     ```bash
+     npm run dev:all
+     ```
+   - **Production (Clustered)**: 
+     ```bash
+     npm run start:cluster
+     ```
 
-### Running the Application
+## 📄 Documentation
+- Please see `VERSION.md` for the current active version.
+- Please see `UPDATES.md` for a log of recent optimizations and feature additions.
 
-You can run both backend and frontend concurrently with a single command:
-
-```bash
-npm run dev:all
-```
-
-Or run them geographically:
-- **Backend**: `npm run dev` (Runs on port 5000)
-- **Frontend**: `npm run dev:client` (Runs on port 3000)
-
-## API Documentation
-The API is available at `http://localhost:5000/api`.
-- `POST /api/auth/login`
-- `GET /api/dashboard`
-- `GET /api/students`
-- ...and more.
-
-## License
-MIT
+## 🔒 Security Note
+This application has been stripped of local environment fallbacks to ensure production safety. You must provide valid environment variables via your hosting provider (e.g., Vercel, Render) for the application to function over the network.
