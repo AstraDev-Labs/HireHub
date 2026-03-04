@@ -6,6 +6,9 @@ npm-debug.log
 yarn-error.log
 .agent/
 *.txt
+*.pdf
+*_output*.json
+*.log
 *.js
 !src/**/*.js
 !frontend/**/*.js
