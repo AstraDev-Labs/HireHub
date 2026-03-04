@@ -8,7 +8,7 @@ const loggerMiddleware = async (req, res, next) => {
             await Log.create({
                 userId: req.user ? req.user._id || req.user.id : 'ANONYMOUS',
                 action: `${req.method} ${req.originalUrl}`,
-                route: req.route ? req.route.path : req.originalUrl,
+                route: req.route ? String(req.route.path) : req.originalUrl,
                 method: req.method,
                 ipAddress: req.ip,
                 statusCode: res.statusCode,

@@ -10,6 +10,11 @@ dotenv.config();
 const validateEnv = require('./utils/validateEnv');
 validateEnv();
 
+// Sanitize FRONTEND_URL (remove trailing slash) to prevent CORS issues
+if (process.env.FRONTEND_URL) {
+    process.env.FRONTEND_URL = process.env.FRONTEND_URL.replace(/\/$/, '');
+}
+
 // Initialize DynamoDB connection (replaces MongoDB)
 require('./config/dynamodb');
 
@@ -131,7 +136,7 @@ app.use('/api/interviews', interviewRoutes);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Handle Unhandled Routes
-app.all(/(.*)/, (req, res, next) => {
+app.all('*', (req, res, next) => {
     next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
