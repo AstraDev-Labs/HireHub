@@ -408,6 +408,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
             message: 'Token sent to email!'
         });
     } catch (err) {
+        console.error('ERROR SENDING EMAIL: 💥', err);
         await User.update({ id: user.id }, {
             passwordResetToken: null,
             passwordResetExpires: null

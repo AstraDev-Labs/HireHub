@@ -26,7 +26,13 @@ const sendEmail = async (options) => {
     }
 
     // 3. Send the email
-    await transporter.sendMail(mailOptions);
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('✅ Email sent successfully to:', options.email);
+    } catch (err) {
+        console.error('❌ Nodemailer Error:', err);
+        throw err;
+    }
 };
 
 module.exports = sendEmail;
