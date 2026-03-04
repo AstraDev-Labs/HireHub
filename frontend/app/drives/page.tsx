@@ -39,7 +39,8 @@ export default function DrivesPage() {
         const fetchDrives = async () => {
             try {
                 const { data } = await api.get('/drives');
-                setDrives(data.data.placementDrives);
+                // Backend returns data.data.drives, not placementDrives
+                setDrives(data.data.drives || data.data.placementDrives || []);
             } catch (err) { } finally {
                 setLoading(false);
             }
