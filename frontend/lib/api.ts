@@ -7,8 +7,13 @@ function getCookie(name: string): string | null {
     return match ? match[2] : null;
 }
 
+let baseURL = process.env.NEXT_PUBLIC_API_URL || '';
+if (baseURL && !baseURL.endsWith('/api')) {
+    baseURL = baseURL.replace(/\/$/, '') + '/api';
+}
+
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL, // Requires NEXT_PUBLIC_API_URL in production
+    baseURL: baseURL, // Requires NEXT_PUBLIC_API_URL in production
     withCredentials: true, // Send HttpOnly cookies with every request
 });
 
