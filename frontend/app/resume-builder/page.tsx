@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, Save, DownloadIcon, FileText, Briefcase, GraduationCap, Code, Upload, CheckCircle, ExternalLink, X, Eye, Loader2 } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+// Native crypto.randomUUID() is used for ID generation
 
 // Types for Resume Data
 interface Education {
@@ -179,7 +179,7 @@ export default function ResumeBuilder() {
     };
 
     const addItem = <T extends { id: string }>(setter: React.Dispatch<React.SetStateAction<T[]>>, itemTemplate: Omit<T, 'id'>) => {
-        setter((prev) => [...prev, { id: uuidv4(), ...itemTemplate } as T]);
+        setter((prev) => [...prev, { id: crypto.randomUUID(), ...itemTemplate } as T]);
     };
 
     const removeItem = <T extends { id: string }>(setter: React.Dispatch<React.SetStateAction<T[]>>, id: string) => {
