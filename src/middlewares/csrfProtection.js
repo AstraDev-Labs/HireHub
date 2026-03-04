@@ -37,7 +37,16 @@ function validateCSRF(req, res, next) {
     }
 
     // Skip auth routes (login/register don't have cookies yet, refresh/logout are automatic)
-    const skipPaths = ['/auth/login', '/auth/register', '/auth/refresh-token', '/auth/logout', '/auth/send-phone-otp', '/auth/verify-phone-otp'];
+    const skipPaths = [
+        '/auth/login',
+        '/auth/register',
+        '/auth/refresh-token',
+        '/auth/logout',
+        '/auth/send-phone-otp',
+        '/auth/verify-phone-otp',
+        '/auth/forgot-password',
+        '/auth/reset-password'
+    ];
     if (skipPaths.some(p => req.path.startsWith(p) || req.originalUrl.includes(p))) {
         return next();
     }
