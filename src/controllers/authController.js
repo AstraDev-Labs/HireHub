@@ -409,11 +409,18 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
         });
     } catch (err) {
         console.error('ERROR SENDING EMAIL: 💥', err);
+        // Clear tokens if email fails
         await User.update({ id: user.id }, {
-            passwordResetToken: null,
-            passwordResetExpires: null
+            $remove: ['passwordResetToken', 'passwordResetExpires']
         });
-        return next(new AppError('There was an error sending the email. Try again later!', 500));
+
+        // Log the reset link to console regardless, so user can recover if network fails
+        console.log('-----------------------------------');
+        console.log('🔗 EMERGENCY RESET LINK (Use this if email failed):');
+        console.log(resetURL);
+        console.log('-----------------------------------');
+
+        return next(new AppError('There was an error sending the email. But don\'t worry, check your server logs for the reset link!', 500));
     }
 });
 

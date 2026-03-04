@@ -61,8 +61,8 @@ const userSchema = new dynamoose.Schema({
     lastLogin: String,
     publicKey: { type: String, default: null },
     profileImage: { type: String, default: null },
-    passwordResetToken: String,
-    passwordResetExpires: Number
+    passwordResetToken: { type: String, required: false },
+    passwordResetExpires: { type: Number, required: false }
 }, {
     timestamps: true
 });
