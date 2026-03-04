@@ -60,6 +60,9 @@ const interviewRoutes = require('./routes/interviewRoutes');
 // Start Express App
 const app = express();
 
+// Trust proxy for rate limiting (important for Render/Vercel)
+app.set('trust proxy', 1);
+
 // ══════════════════════════════════════════════════
 // 1) SECURITY MIDDLEWARE
 // ══════════════════════════════════════════════════
