@@ -221,9 +221,17 @@ function StudentDashboard({ user }: { user: any }) {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">My Dashboard</h2>
-                <p className="text-muted-foreground mt-1">Welcome back, {user?.fullName}</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
+                <div>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-3xl font-bold tracking-tight text-foreground">My Dashboard</h2>
+                        <div className="hidden sm:flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-semibold border border-primary/20">
+                            <Clock className="h-4 w-4" />
+                            <DashboardClock />
+                        </div>
+                    </div>
+                    <p className="text-muted-foreground mt-1">Welcome back, {user?.fullName}</p>
+                </div>
             </div>
 
             {/* Student Info Card */}
@@ -295,9 +303,17 @@ function CompanyDashboardView({ user }: { user: any }) {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight text-gray-900">{data.companyName} Dashboard</h2>
-                <p className="text-muted-foreground mt-1">Recruitment overview</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
+                <div>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-3xl font-bold tracking-tight text-gray-900">{data.companyName} Dashboard</h2>
+                        <div className="hidden sm:flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-semibold border border-primary/20">
+                            <Clock className="h-4 w-4" />
+                            <DashboardClock />
+                        </div>
+                    </div>
+                    <p className="text-muted-foreground mt-1">Recruitment overview</p>
+                </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -372,9 +388,15 @@ function ParentDashboard({ user }: { user: any }) {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900">Student Progress</h2>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-3xl font-bold tracking-tight text-gray-900">Student Progress</h2>
+                        <div className="hidden sm:flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-semibold border border-primary/20">
+                            <Clock className="h-4 w-4" />
+                            <DashboardClock />
+                        </div>
+                    </div>
                     <p className="text-muted-foreground mt-1">Parent of: <span className="font-semibold text-primary">{childName || user?.studentName}</span></p>
                 </div>
             </div>
