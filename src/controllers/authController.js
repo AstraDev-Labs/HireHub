@@ -356,9 +356,20 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
     // 1. Get user based on POSTed email
-    const user = await User.findByEmail(req.body.email);
-    if (!user) {
-        return next(new AppError('There is no user with that email address.', 404));
+    const email = req.body.email?.toLowerCase();
+    if (!email) {
+        return next(new AppError('Please provide email address', 400));
+    }
+
+    const user = await User.findByEmail(email);
+
+    // For security: return success even if user doesn't exist to prevent email enumeration
+    // but we only process the reset if user is found and active
+    if (!user || !user.isActive) {
+        return res.status(200).json({
+            status: 'success',
+            message: 'If an account exists for that email, you will receive a password reset link shortly.'
+        });
     }
 
     // 2. Generate the random reset token
