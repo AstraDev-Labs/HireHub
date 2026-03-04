@@ -10,9 +10,15 @@ dotenv.config();
 const validateEnv = require('./utils/validateEnv');
 validateEnv();
 
-// Sanitize FRONTEND_URL (remove trailing slash) to prevent CORS issues
+// Sanitize FRONTEND_URL to extract ONLY the base origin (prevents CORS mismatches if user pastes a path like /login)
 if (process.env.FRONTEND_URL) {
-    process.env.FRONTEND_URL = process.env.FRONTEND_URL.replace(/\/$/, '');
+    try {
+        const parsedUrl = new URL(process.env.FRONTEND_URL);
+        process.env.FRONTEND_URL = parsedUrl.origin;
+    } catch (e) {
+        // Fallback if it's not a valid URL (e.g. localhost:3000)
+        process.env.FRONTEND_URL = process.env.FRONTEND_URL.replace(/\/$/, '');
+    }
 }
 
 // Initialize DynamoDB connection (replaces MongoDB)
