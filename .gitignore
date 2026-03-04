@@ -4,3 +4,8 @@ node_modules/
 coverage/
 npm-debug.log
 yarn-error.log
+.agent/
+*.txt
+*.js
+!src/**/*.js
+!frontend/**/*.js
