@@ -136,7 +136,7 @@ app.use('/api/interviews', interviewRoutes);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Handle Unhandled Routes
-app.all('*', (req, res, next) => {
+app.use((req, res, next) => {
     next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
