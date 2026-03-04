@@ -19,6 +19,17 @@ interface PlacementDrive {
     eligibilityCriteria: { minCGPA: number; allowedBranches: string[] };
 }
 
+const safeFormatDate = (dateStr: string) => {
+    if (!dateStr) return 'Date TBA';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Date TBA';
+    try {
+        return format(d, 'MMM dd, yyyy');
+    } catch {
+        return 'Date TBA';
+    }
+};
+
 export default function DrivesPage() {
     const { user } = useAuth();
     const [drives, setDrives] = useState<PlacementDrive[]>([]);
@@ -76,7 +87,7 @@ export default function DrivesPage() {
                                         </CardDescription>
                                     </div>
                                     <div className="text-right text-sm font-medium text-muted-foreground">
-                                        <div className="flex items-center gap-1 justify-end"><CalendarDays className="w-3 h-3" /> {drive.date ? format(new Date(drive.date), 'MMM dd, yyyy') : 'Date TBA'}</div>
+                                        <div className="flex items-center gap-1 justify-end"><CalendarDays className="w-3 h-3" /> {safeFormatDate(drive.date)}</div>
                                         <div className="flex items-center gap-1 justify-end mt-1"><MapPin className="w-3 h-3" /> {drive.location || 'TBA'}</div>
                                     </div>
                                 </div>
