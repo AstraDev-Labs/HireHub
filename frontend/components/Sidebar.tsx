@@ -52,7 +52,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             label: 'My Profile',
             icon: UserCircle,
             href: '/profile',
-            roles: ['STUDENT', 'COMPANY'],
+            roles: ['ADMIN', 'STAFF', 'STUDENT', 'COMPANY'],
         },
         {
             label: 'Resources',
