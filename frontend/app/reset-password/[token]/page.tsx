@@ -57,8 +57,8 @@ export default function ResetPasswordPage() {
         <div className="flex h-screen w-full items-center justify-center bg-background px-4">
             <Card className="w-full max-w-sm shadow-2xl border border-border bg-card text-card-foreground animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
                 <CardHeader className="space-y-1 pb-4">
-                    <CardTitle className="text-2xl font-extrabold tracking-tight text-foreground">Reset Password</CardTitle>
-                    <CardDescription className="text-muted-foreground text-sm font-medium">
+                    <CardTitle className="text-2xl font-extrabold tracking-tight text-foreground text-center">Reset Password</CardTitle>
+                    <CardDescription className="text-muted-foreground text-sm font-medium text-center">
                         Enter your new password below.
                     </CardDescription>
                 </CardHeader>
