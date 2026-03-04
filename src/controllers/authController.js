@@ -389,18 +389,12 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     try {
         await sendEmail({
             email: user.email,
-            subject: 'Your password reset token (valid for 10 min)',
-            message: `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\nIf you didn't forget your password, please ignore this email!`,
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
-                    <h2 style="color: #1f2937; margin-bottom: 8px;">Password Reset Request</h2>
-                    <p style="color: #6b7280; font-size: 14px;">You requested a password reset. Click the button below to set a new password:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${resetURL}" style="background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
-                    </div>
-                    <p style="color: #9ca3af; font-size: 12px;">This link expires in 10 minutes. If you did not request this, please ignore this email.</p>
-                </div>
-            `
+            subject: 'Reset your password - HireHub',
+            type: 'forgot-password',
+            data: {
+                resetURL,
+                fullName: user.name || user.email.split('@')[0]
+            }
         });
 
         res.status(200).json({

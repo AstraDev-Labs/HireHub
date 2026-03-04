@@ -1,62 +1,52 @@
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 
+/**
+ * sendEmail - Redirects email sending to Vercel Email Gateway
+ * This bypasses Render's network restrictions.
+ */
 const sendEmail = async (options) => {
-    // 0. Fallback for testing: If no email credentials, just log to console
-    if (!process.env.EMAIL_USERNAME) {
-        console.warn('⚠️  EMAIL_USERNAME is missing! LOGGING EMAIL CONTENT INSTEAD OF SENDING:');
+    // 0. Fallback for testing: If no internal key, log to console
+    const VERCEL_URL = process.env.FRONTEND_URL;
+    const INTERNAL_KEY = process.env.INTERNAL_EMAIL_BACKEND_KEY;
+
+    if (!INTERNAL_KEY) {
+        console.warn('⚠️  INTERNAL_EMAIL_BACKEND_KEY is missing! LOGGING EMAIL INSTEAD OF SENDING:');
         console.log('-----------------------------------');
         console.log('📧 To:', options.email);
-        console.log('📝 Subject:', options.subject);
-        console.log('🔗 Link:', options.message.match(/https?:\/\/[^\s]+/)?.[0] || 'No link found');
+        console.log('🔗 Type:', options.type || 'forgot-password');
         console.log('-----------------------------------');
         return;
     }
 
-    // 1. Create a transporter
-    const transportConfig = process.env.EMAIL_HOST ? {
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT || 587,
-        secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-        auth: {
-            user: process.env.EMAIL_USERNAME,
-            pass: (process.env.EMAIL_PASSWORD || '').replace(/\s+/g, '')
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000
-    } : {
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USERNAME,
-            pass: (process.env.EMAIL_PASSWORD || '').replace(/\s+/g, '')
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000
-    };
-
-    const transporter = nodemailer.createTransport(transportConfig);
-
-    // 2. Define the email options
-    const mailOptions = {
-        from: `CPMS System <${process.env.EMAIL_USERNAME}>`,
-        to: options.email,
-        subject: options.subject,
-        text: options.message
-    };
-
-    // Add HTML if provided
-    if (options.html) {
-        mailOptions.html = options.html;
-    }
-
-    // 3. Send the email
     try {
-        await transporter.sendMail(mailOptions);
-        console.log('✅ Email sent successfully to:', options.email);
+        const response = await axios.post(`${VERCEL_URL}/api/send-email`, {
+            to: options.email,
+            subject: options.subject,
+            type: options.type || 'forgot-password',
+            data: options.data || {}
+        }, {
+            headers: {
+                'Authorization': `Bearer ${INTERNAL_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            timeout: 10000 // 10 second timeout for the Vercel call
+        });
+
+        if (response.data.success) {
+            console.log('✅ Email successfully dispatched via Vercel Gateway to:', options.email);
+        }
     } catch (err) {
-        console.error('❌ Nodemailer Error:', err);
-        throw err;
+        console.error('❌ Vercel Email Gateway Error:', err.response?.data || err.message);
+
+        // Final fallback: Log the link so the user isn't stuck if Vercel is down/misconfigured
+        if (options.data && options.data.resetURL) {
+            console.log('-----------------------------------');
+            console.log('🔗 EMERGENCY RESET LINK (Vercel Gateway Failed):');
+            console.log(options.data.resetURL);
+            console.log('-----------------------------------');
+        }
+
+        throw new Error('Failed to send email via Vercel Gateway');
     }
 };
 
