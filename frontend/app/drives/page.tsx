@@ -76,8 +76,8 @@ export default function DrivesPage() {
                                         </CardDescription>
                                     </div>
                                     <div className="text-right text-sm font-medium text-muted-foreground">
-                                        <div className="flex items-center gap-1 justify-end"><CalendarDays className="w-3 h-3" /> {format(new Date(drive.date), 'MMM dd, yyyy')}</div>
-                                        <div className="flex items-center gap-1 justify-end mt-1"><MapPin className="w-3 h-3" /> {drive.location}</div>
+                                        <div className="flex items-center gap-1 justify-end"><CalendarDays className="w-3 h-3" /> {drive.date ? format(new Date(drive.date), 'MMM dd, yyyy') : 'Date TBA'}</div>
+                                        <div className="flex items-center gap-1 justify-end mt-1"><MapPin className="w-3 h-3" /> {drive.location || 'TBA'}</div>
                                     </div>
                                 </div>
                             </CardHeader>
