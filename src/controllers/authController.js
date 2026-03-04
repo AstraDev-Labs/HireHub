@@ -25,7 +25,8 @@ const signRefreshToken = id => {
 const cookieOptions = (maxAge) => ({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Must be 'none' for cross-domain
+
     maxAge,
     path: '/',
 });
@@ -290,14 +291,16 @@ exports.logout = catchAsync(async (req, res, next) => {
     res.cookie('jwt', 'loggedout', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+
         expires: new Date(0),
         path: '/',
     });
     res.cookie('refreshToken', 'loggedout', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+
         expires: new Date(0),
         path: '/',
     });

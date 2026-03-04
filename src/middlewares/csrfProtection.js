@@ -20,7 +20,8 @@ function setCSRFToken(req, res, next) {
         res.cookie('csrfToken', token, {
             httpOnly: false,     // Frontend must be able to read this
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Must be 'none' for cross-domain Vercel <-> Render
+
             maxAge: 24 * 60 * 60 * 1000, // 1 day
             path: '/',
         });
