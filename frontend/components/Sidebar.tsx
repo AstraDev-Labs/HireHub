@@ -95,6 +95,30 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             icon: CalendarDays,
             href: '/interviews',
             roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
+        },
+        {
+            label: 'Students',
+            icon: Users,
+            href: '/students',
+            roles: ['ADMIN', 'STAFF', 'COMPANY'],
+        },
+        {
+            label: 'Drives & Events',
+            icon: Building2,
+            href: '/drives',
+            roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
+        },
+        {
+            label: 'Reports',
+            icon: FileLineChart,
+            href: '/reports',
+            roles: ['ADMIN', 'STAFF'],
+        },
+        {
+            label: 'Admin Panel',
+            icon: LayoutDashboard,
+            href: '/admin',
+            roles: ['ADMIN'],
         }
     ];
 
