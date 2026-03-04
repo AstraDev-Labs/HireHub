@@ -9,6 +9,8 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/logout', authMiddleware.protect, authController.logout);
 router.post('/refresh-token', authController.refreshToken);
+router.post('/forgot-password', authController.forgotPassword);
+router.patch('/reset-password/:token', authController.resetPassword);
 
 // OTP Routes
 router.post('/send-phone-otp', otpController.sendPhoneOTP);

@@ -59,7 +59,10 @@ const userSchema = new dynamoose.Schema({
     linkedStudentId: String,
     refreshToken: String,
     lastLogin: String,
-    publicKey: { type: String, default: null }
+    publicKey: { type: String, default: null },
+    profileImage: { type: String, default: null },
+    passwordResetToken: String,
+    passwordResetExpires: Number
 }, {
     timestamps: true
 });

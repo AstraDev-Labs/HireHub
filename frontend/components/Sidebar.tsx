@@ -141,6 +141,38 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
                 {!collapsed && <NotificationBell />}
             </div>
 
+            {/* Profile Section */}
+            {!collapsed && (
+                <div className="px-3 py-6 flex flex-col items-center border-b border-white/5 mx-2 mb-2">
+                    <div className="h-16 w-16 rounded-full border-2 border-primary/20 p-0.5 mb-3">
+                        {user.profileImage ? (
+                            <img src={user.profileImage} alt="Profile" className="h-full w-full rounded-full object-cover" />
+                        ) : (
+                            <div className="h-full w-full rounded-full bg-primary/10 flex items-center justify-center">
+                                <UserCircle className="h-10 w-10 text-primary" />
+                            </div>
+                        )}
+                    </div>
+                    <div className="text-center overflow-hidden w-full">
+                        <p className="text-sm font-bold text-white truncate">{user.fullName}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{user.role}</p>
+                    </div>
+                </div>
+            )}
+            {collapsed && (
+                <div className="flex justify-center py-4 border-b border-white/5 mx-2 mb-2">
+                    <div className="h-10 w-10 rounded-full border-2 border-primary/20 p-0.5">
+                        {user.profileImage ? (
+                            <img src={user.profileImage} alt="Profile" className="h-full w-full rounded-full object-cover" />
+                        ) : (
+                            <div className="h-full w-full rounded-full bg-primary/10 flex items-center justify-center">
+                                <UserCircle className="h-6 w-6 text-primary" />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Nav Links */}
             <div className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
                 {filteredRoutes.map((route) => (

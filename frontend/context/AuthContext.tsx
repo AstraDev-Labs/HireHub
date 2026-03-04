@@ -18,6 +18,7 @@ interface User {
     batchYear?: string;
     department?: string;
     publicKey?: string;
+    profileImage?: string;
 }
 
 interface AuthContextType {

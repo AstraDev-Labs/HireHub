@@ -228,6 +228,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
         }
         userUpdates.phoneNumber = req.body.phoneNumber;
     }
+    if (req.body.profileImage) userUpdates.profileImage = req.body.profileImage;
 
     // Apply user updates
     if (Object.keys(userUpdates).length > 0) {

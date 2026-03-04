@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { UserCircle, Mail, Phone, GraduationCap, Building2, Briefcase, Shield, Save, Loader2, BookOpen, Users, Lock, Eye, EyeOff, CheckCircle2, XCircle, Github, Linkedin, ExternalLink, Globe, Download, FileText } from 'lucide-react';
+import { UserCircle, Camera, Mail, Phone, GraduationCap, Building2, Briefcase, Shield, Save, Loader2, BookOpen, Users, Lock, Eye, EyeOff, CheckCircle2, XCircle, Github, Linkedin, ExternalLink, Globe, Download, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -17,6 +17,7 @@ interface ProfileData {
     fullName: string;
     phoneNumber: string;
     role: string;
+    profileImage?: string;
     department?: string;
     cgpa?: number;
     batchYear?: number;
@@ -165,6 +166,65 @@ export default function ProfilePage() {
                     {rc.label}
                 </span>
             </div>
+
+            {/* Profile Photo Section */}
+            <Card className="border-0 shadow-md">
+                <CardContent className="pt-6">
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                        <div className="relative group">
+                            <div className="h-24 w-24 rounded-full border-4 border-background shadow-xl overflow-hidden bg-muted flex items-center justify-center">
+                                {profile.profileImage ? (
+                                    <img src={profile.profileImage} alt="Profile" className="h-full w-full object-cover" />
+                                ) : (
+                                    <UserCircle className="h-16 w-16 text-muted-foreground" />
+                                )}
+                            </div>
+                            <label className="absolute bottom-0 right-0 h-8 w-8 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-primary/90 transition-colors">
+                                <Camera className="h-4 w-4 text-primary-foreground" />
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+
+                                        try {
+                                            toast.loading("Uploading image...", { id: 'upload' });
+                                            const { data: uploadData } = await api.post('/upload', formData, {
+                                                headers: { 'Content-Type': 'multipart/form-data' }
+                                            });
+                                            const imageUrl = uploadData.data.url;
+
+                                            await api.patch('/users/me', { profileImage: imageUrl });
+
+                                            setProfile({ ...profile, profileImage: imageUrl });
+
+                                            const storedUser = localStorage.getItem('user');
+                                            if (storedUser) {
+                                                const parsed = JSON.parse(storedUser);
+                                                parsed.profileImage = imageUrl;
+                                                localStorage.setItem('user', JSON.stringify(parsed));
+                                            }
+
+                                            toast.success("Profile photo updated!", { id: 'upload' });
+                                        } catch (err: any) {
+                                            toast.error(err.response?.data?.message || "Upload failed", { id: 'upload' });
+                                        }
+                                    }}
+                                />
+                            </label>
+                        </div>
+                        <div className="text-center md:text-left">
+                            <h3 className="text-xl font-bold">{profile.fullName}</h3>
+                            <p className="text-sm text-muted-foreground">Update your profile picture to be seen across the platform.</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Account Info (Read-Only) */}
             <Card className="border-0 shadow-md">

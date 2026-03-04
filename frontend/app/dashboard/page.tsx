@@ -11,6 +11,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
+const DashboardClock = () => {
+    const [time, setTime] = useState(new Date());
+    useEffect(() => {
+        const timer = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+    return <span>{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>;
+};
+
 // Simple bar component for charts
 function ProgressBar({ value, max, color = 'bg-primary', label, count }: { value: number; max: number; color?: string; label: string; count?: string }) {
     const pct = max > 0 ? Math.round((value / max) * 100) : 0;
@@ -61,7 +70,13 @@ function AdminDashboard({ user }: { user: any }) {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+                        <div className="hidden sm:flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-semibold border border-primary/20">
+                            <Clock className="h-4 w-4" />
+                            <DashboardClock />
+                        </div>
+                    </div>
                     <p className="text-muted-foreground mt-1 text-sm md:text-base">
                         Welcome back, {user?.fullName}! Here's what's happening today.
                     </p>
