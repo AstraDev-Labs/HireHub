@@ -44,16 +44,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const pathname = usePathname();
 
     useEffect(() => {
-        // Check local storage for user data on load
-        // Note: Token is now in HttpOnly cookie (not accessible via JS — secure!)
-        // We only store non-sensitive user profile data in localStorage
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
+        const fetchCurrentUser = async () => {
+            try {
+                // This GET request will also capture the CSRF token in the interceptor
+                const { data } = await api.get('/users/me');
+                const userData = data.data.user;
+                setUser(userData);
+                localStorage.setItem('user', JSON.stringify(userData));
+            } catch (err) {
+                console.error('Initial session check failed:', err);
+                const storedUser = localStorage.getItem('user');
+                const token = localStorage.getItem('token');
+                if (storedUser && token) {
+                    setUser(JSON.parse(storedUser));
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        if (storedUser && token) {
-            setUser(JSON.parse(storedUser));
-        }
-        setLoading(false);
+        fetchCurrentUser();
     }, []);
 
     const login = (token: string, _refreshToken: string, userData: User, isProfileComplete: boolean = true) => {

@@ -14,18 +14,22 @@ const AppError = require('../utils/AppError');
 
 // Generate or refresh CSRF token
 function setCSRFToken(req, res, next) {
-    // Only set if not already present
-    if (!req.cookies.csrfToken) {
-        const token = crypto.randomBytes(32).toString('hex');
-        res.cookie('csrfToken', token, {
-            httpOnly: false,     // Frontend must be able to read this
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Must be 'none' for cross-domain Vercel <-> Render
+    let token = req.cookies.csrfToken;
 
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
+    // Generate new if not present
+    if (!token) {
+        token = crypto.randomBytes(32).toString('hex');
+        res.cookie('csrfToken', token, {
+            httpOnly: false, // Frontend reads via header but we keep cookie for Double Submit
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 24 * 60 * 60 * 1000,
             path: '/',
         });
     }
+
+    // Always send in header so frontend can intercept (cross-domain friendly)
+    res.setHeader('X-CSRF-Token', token);
     next();
 }
 

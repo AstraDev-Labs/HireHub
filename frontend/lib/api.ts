@@ -27,7 +27,9 @@ api.interceptors.request.use((config) => {
 
         // Send CSRF token on mutating requests
         if (['post', 'put', 'patch', 'delete'].includes(config.method || '')) {
-            const csrfToken = getCookie('csrfToken');
+            // Priority 1: document.cookie (if same domain)
+            // Priority 2: localStorage (if cross domain)
+            const csrfToken = getCookie('csrfToken') || localStorage.getItem('csrfToken');
             if (csrfToken) {
                 config.headers['X-CSRF-Token'] = csrfToken;
             }
@@ -37,7 +39,14 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Capture CSRF token from response headers (cross-domain friendly)
+        const csrfToken = response.headers['x-csrf-token'];
+        if (csrfToken && typeof window !== 'undefined') {
+            localStorage.setItem('csrfToken', csrfToken);
+        }
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
         if (error.response?.status === 401 && !originalRequest._retry) {
