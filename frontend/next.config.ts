@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactCompiler: false,
+  reactCompiler: true,
+  turbopack: {
+    root: '..',
+  },
   // Security headers for all frontend routes
   async headers() {
     return [
