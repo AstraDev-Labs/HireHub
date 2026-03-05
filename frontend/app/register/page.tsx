@@ -334,14 +334,14 @@ export default function RegisterPage() {
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">I am a... <span className="text-destructive">*</span></label>
                                     <select
-                                        className={cn(inputClass, "bg-muted/50 h-11 border-border focus:ring-primary dark:bg-slate-900 dark:text-foreground")}
+                                        className={cn(inputClass, "bg-muted/50 h-11 border-border focus:ring-primary")}
                                         value={role}
                                         onChange={(e) => form.setValue("role", e.target.value as any)}
                                     >
-                                        <option value="STUDENT" className="dark:bg-slate-900">Student</option>
-                                        <option value="COMPANY" className="dark:bg-slate-900">Company Staff</option>
-                                        <option value="PARENT" className="dark:bg-slate-900">Parent</option>
-                                        <option value="STAFF" className="dark:bg-slate-900">College Staff</option>
+                                        <option value="STUDENT">Student</option>
+                                        <option value="COMPANY">Company Staff</option>
+                                        <option value="PARENT">Parent</option>
+                                        <option value="STAFF">College Staff</option>
                                     </select>
                                     <p className="text-[10px] text-muted-foreground ml-1">Select your primary role in the portal.</p>
                                 </div>
@@ -380,26 +380,26 @@ export default function RegisterPage() {
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Department</label>
                                             <select
-                                                className={cn(inputClass, "bg-muted/50 h-11 border-border dark:bg-slate-900 dark:text-foreground")}
+                                                className={cn(inputClass, "bg-muted/50 h-11 border-border")}
                                                 value={form.watch('department')}
                                                 onChange={(e) => form.setValue("department", e.target.value)}
                                             >
-                                                <option value="" className="dark:bg-slate-900">Select</option>
-                                                {departments.map((d: any) => <option key={d.id || d._id} value={d.name} className="dark:bg-slate-900">{d.name}</option>)}
+                                                <option value="">Select</option>
+                                                {departments.map((d: any) => <option key={d.id || d._id} value={d.name}>{d.name}</option>)}
                                             </select>
                                         </div>
                                         {role === 'STUDENT' && (
                                             <div className="space-y-2">
                                                 <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Batch</label>
                                                 <select
-                                                    className={cn(inputClass, "bg-muted/50 h-11 border-border dark:bg-slate-900 dark:text-foreground")}
+                                                    className={cn(inputClass, "bg-muted/50 h-11 border-border")}
                                                     value={form.watch('batchYear')}
                                                     onChange={(e) => form.setValue("batchYear", e.target.value)}
                                                 >
-                                                    <option value="" className="dark:bg-slate-900">Year</option>
+                                                    <option value="">Year</option>
                                                     {Array.from({ length: 10 }, (_, i) => {
                                                         const year = new Date().getFullYear() - i;
-                                                        return <option key={year} value={year.toString()} className="dark:bg-slate-900">{year}</option>
+                                                        return <option key={year} value={year.toString()}>{year}</option>
                                                     })}
                                                 </select>
                                             </div>
@@ -412,12 +412,12 @@ export default function RegisterPage() {
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Company</label>
                                             <select
-                                                className={cn(inputClass, "bg-muted/50 h-11 border-border dark:bg-slate-900 dark:text-foreground")}
+                                                className={cn(inputClass, "bg-muted/50 h-11 border-border")}
                                                 value={form.watch('companyId')}
                                                 onChange={(e) => form.setValue("companyId", e.target.value)}
                                             >
-                                                <option value="" className="dark:bg-slate-900">Select Company</option>
-                                                {companies.map((c: any) => <option key={c.id || c._id} value={c.id || c._id} className="dark:bg-slate-900">{c.name}</option>)}
+                                                <option value="">Select Company</option>
+                                                {companies.map((c: any) => <option key={c.id || c._id} value={c.id || c._id}>{c.name}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-2">
