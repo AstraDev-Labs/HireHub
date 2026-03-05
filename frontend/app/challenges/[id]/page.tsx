@@ -42,6 +42,21 @@ export default function ChallengeDetailPage() {
         fetchChallenge();
     }, [id, router]);
 
+    const handleLanguageChange = (newLang: string) => {
+        setLanguage(newLang);
+        // Find snippet for new language
+        const snippet = challenge.codeSnippets?.find((s: any) => s.language.toLowerCase() === newLang.toLowerCase());
+        if (snippet) {
+            setCode(snippet.code);
+        } else {
+            // Default empty or simple boilerplate if no snippet found
+            if (newLang === 'python') setCode('# Write your code here\n');
+            else if (newLang === 'java') setCode('public class Main {\n    public static void main(String[] args) {\n        \n    }\n}');
+            else if (newLang === 'cpp') setCode('#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}');
+            else setCode('');
+        }
+    };
+
     const handleSubmit = async (isRunOnly = false) => {
         setSubmitting(true);
         setResult(null);
@@ -85,7 +100,7 @@ export default function ChallengeDetailPage() {
                 <div className="flex items-center gap-3">
                     <select
                         value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
+                        onChange={(e) => handleLanguageChange(e.target.value)}
                         className="bg-muted text-sm border-none rounded-md px-3 py-1.5 focus:ring-1 focus:ring-primary outline-none font-medium cursor-pointer"
                     >
                         <option value="javascript">JavaScript</option>

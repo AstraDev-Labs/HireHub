@@ -92,29 +92,33 @@ exports.submitSolution = async (req, res, next) => {
             status: 'Pending'
         });
 
-        // 2. Prepare payload for Judge0
-        // We use the first test case for now (simplification for MVP)
+        // 2. Prepare payload for Judge0 (Base64 encoded for reliability)
         const sampleTestCase = challenge.testCases ? challenge.testCases[0] : { input: "", output: "" };
 
         const options = {
             method: 'POST',
             url: `https://${process.env.JUDGE0_API_HOST}/submissions`,
-            params: { base64_encoded: 'false', wait: 'true' },
+            params: { base64_encoded: 'true', wait: 'true' },
             headers: {
                 'content-type': 'application/json',
                 'X-RapidAPI-Key': process.env.JUDGE0_API_KEY,
                 'X-RapidAPI-Host': process.env.JUDGE0_API_HOST
             },
             data: {
-                source_code: code,
+                source_code: Buffer.from(code).toString('base64'),
                 language_id: languageId,
-                stdin: sampleTestCase.input,
-                expected_output: sampleTestCase.output
+                stdin: Buffer.from(sampleTestCase.input || "").toString('base64'),
+                expected_output: Buffer.from(sampleTestCase.output || "").toString('base64')
             }
         };
 
         const response = await axios.request(options);
         const { status, stdout, stderr, compile_output, time, memory } = response.data;
+
+        // Decode results from base64
+        const decodedStdout = stdout ? Buffer.from(stdout, 'base64').toString() : null;
+        const decodedStderr = stderr ? Buffer.from(stderr, 'base64').toString() : null;
+        const decodedCompileOutput = compile_output ? Buffer.from(compile_output, 'base64').toString() : null;
 
         // 3. Update submission with results
         let finalStatus = 'Pending';
@@ -127,9 +131,9 @@ exports.submitSolution = async (req, res, next) => {
         await Submission.update({ id: submission.id }, {
             status: finalStatus,
             executionResult: {
-                stdout,
-                stderr,
-                compile_output,
+                stdout: decodedStdout,
+                stderr: decodedStderr,
+                compile_output: decodedCompileOutput,
                 time: parseFloat(time),
                 memory: parseFloat(memory),
                 status_id: status.id
@@ -141,7 +145,12 @@ exports.submitSolution = async (req, res, next) => {
             data: {
                 submissionId: submission.id,
                 result: finalStatus,
-                execution: response.data
+                execution: {
+                    ...response.data,
+                    stdout: decodedStdout,
+                    stderr: decodedStderr,
+                    compile_output: decodedCompileOutput
+                }
             }
         });
     } catch (error) {
