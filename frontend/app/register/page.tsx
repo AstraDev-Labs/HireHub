@@ -359,7 +359,7 @@ export default function RegisterPage() {
                                     <Input id="username" placeholder="johndoe123" {...form.register("username")}
                                         readOnly={['STUDENT', 'STAFF', 'COMPANY'].includes(role)}
                                         className={cn("bg-muted/50 h-11 border-border font-mono", ['STUDENT', 'STAFF', 'COMPANY'].includes(role) && "opacity-70 cursor-not-allowed")} />
-                                    <p className="text-[10px] text-primary/70 font-medium ml-1">This is your permanent login ID.</p>
+                                    <p className="text-[10px] text-primary/70 font-medium ml-1">Username will be generated based on your Name, Department & Batch.</p>
                                 </div>
 
                                 <div className="space-y-2">
