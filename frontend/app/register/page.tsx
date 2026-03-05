@@ -544,23 +544,25 @@ export default function RegisterPage() {
             </Card>
 
             <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-                <DialogContent className="sm:max-w-md !bg-white dark:!bg-[#0a0f1c] text-foreground p-0 overflow-hidden rounded-2xl shadow-2xl border border-border z-[9999]">
-                    <div className="p-6">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl font-black uppercase tracking-tight">Identity Confirmation</DialogTitle>
-                            <DialogDescription className="pt-3 text-sm font-medium leading-relaxed opacity-80">
-                                Please review your data carefully. Portal identity cannot be modified after initial creation.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center text-white shrink-0 text-xl">⚠️</div>
-                            <p className="text-[11px] font-black uppercase tracking-wider text-destructive leading-tight">Permanent Entry Warning: Record editing is restricted post-deployment.</p>
+                <DialogContent className="sm:max-w-md border-none bg-transparent p-0 gap-0 overflow-hidden shadow-none">
+                    <div className="bg-card text-card-foreground overflow-hidden rounded-2xl shadow-xl border border-border flex flex-col">
+                        <div className="p-6 pb-8">
+                            <DialogHeader>
+                                <DialogTitle className="text-2xl font-black uppercase tracking-tight">Identity Confirmation</DialogTitle>
+                                <DialogDescription className="pt-3 text-sm font-medium leading-relaxed opacity-80">
+                                    Please review your data carefully. Portal identity cannot be modified after initial creation.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="mt-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center text-white shrink-0 text-xl">⚠️</div>
+                                <p className="text-[11px] font-black uppercase tracking-wider text-destructive leading-tight">Permanent Entry Warning: Record editing is restricted post-deployment.</p>
+                            </div>
                         </div>
+                        <DialogFooter className="bg-muted/30 p-4 flex flex-col sm:flex-row gap-3">
+                            <Button variant="outline" onClick={() => setShowConfirmModal(false)} className="flex-1 h-11 border-border font-bold uppercase text-[10px] tracking-widest">Retract</Button>
+                            <Button onClick={() => { setStep(2); setShowConfirmModal(false); }} className="flex-1 h-11 font-bold uppercase text-[10px] tracking-widest shadow-lg">Authorize</Button>
+                        </DialogFooter>
                     </div>
-                    <DialogFooter className="bg-muted/30 p-4 flex flex-col sm:flex-row gap-3">
-                        <Button variant="outline" onClick={() => setShowConfirmModal(false)} className="flex-1 h-11 border-border font-bold uppercase text-[10px] tracking-widest bg-background hover:bg-muted">Retract</Button>
-                        <Button onClick={() => { setStep(2); setShowConfirmModal(false); }} className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20">Authorize</Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>
