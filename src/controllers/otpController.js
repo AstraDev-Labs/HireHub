@@ -20,6 +20,12 @@ exports.sendPhoneOTP = catchAsync(async (req, res, next) => {
         return next(new AppError('Please provide a valid 10-digit phone number.', 400));
     }
 
+    // Check if email already belongs to an existing user
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+        return next(new AppError('An account with this email already exists.', 400));
+    }
+
     console.log('[OTP] Generating code via OTP model...');
     const otp = await OTP.createOTP(email, 'PHONE_VERIFY');
     console.log(`[OTP] Generated code: ${otp.code}`);

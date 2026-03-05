@@ -83,6 +83,11 @@ User.findByEmail = async function (email) {
     return results.length > 0 ? results[0] : null;
 };
 
+User.findByUsername = async function (username) {
+    const results = await User.scan('username').eq(username).exec();
+    return results.length > 0 ? results[0] : null;
+};
+
 User.findById = async function (id) {
     try {
         return await User.get(id);

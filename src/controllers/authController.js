@@ -63,6 +63,12 @@ exports.register = catchAsync(async (req, res, next) => {
         return next(new AppError('Email already in use.', 400));
     }
 
+    // 4.5 Check for duplicate username
+    const existingUsername = await User.findByUsername(req.body.username);
+    if (existingUsername) {
+        return next(new AppError('Username is already taken. Please modify your name slightly or contact admin.', 400));
+    }
+
     // Use 10 rounds instead of 12. 12 takes ~250ms and blocks the event loop hard.
     // 10 takes ~60ms, allowing 4x more concurrent registrations.
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
