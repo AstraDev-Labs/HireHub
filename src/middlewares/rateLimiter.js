@@ -1,9 +1,9 @@
 const rateLimit = require('express-rate-limit');
 
-// Global API limiter: 100 requests per 15 minutes per IP
+// Global API limiter: Adjusted for high throughput stress testing
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 10000, // Raised from 100 to handle ab stress tests (5000+ requests)
     message: {
         status: 'fail',
         message: 'Too many requests from this IP. Please try again after 15 minutes.'

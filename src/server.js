@@ -142,6 +142,11 @@ app.use('/api/offers', offerLetterRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/interviews', interviewRoutes);
 
+// High-performance health check route for load testing / root API pinging
+app.get('/api', (req, res) => {
+    res.status(200).json({ status: 'success', message: 'HireHub API is running smoothly' });
+});
+
 // Static folder for file uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
