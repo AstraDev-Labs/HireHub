@@ -112,7 +112,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             label: 'Coding Challenges',
             icon: Code2,
             href: '/challenges',
-            roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
+            roles: ['ADMIN', 'STAFF', 'STUDENT'],
         },
         {
             label: 'Reports',
