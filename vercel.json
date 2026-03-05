@@ -1,0 +1,16 @@
+{
+    "version": 2,
+    "rewrites": [
+        {
+            "source": "/api/:match*",
+            "destination": "/api/index.js"
+        }
+    ],
+    "redirects": [
+        {
+            "source": "/api",
+            "destination": "/api/",
+            "permanent": true
+        }
+    ]
+}
