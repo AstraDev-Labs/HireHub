@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Users, UserCircle, Briefcase, GraduationCap, FileLineChart, LogOut, Building2, MessageSquare, CalendarDays, Bell, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, UserCircle, Briefcase, GraduationCap, FileLineChart, LogOut, Building2, MessageSquare, CalendarDays, Bell, FileText, Code2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -106,6 +106,12 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             label: 'Drives & Events',
             icon: Building2,
             href: '/drives',
+            roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
+        },
+        {
+            label: 'Coding Challenges',
+            icon: Code2,
+            href: '/challenges',
             roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
         },
         {
