@@ -6,7 +6,7 @@ const Dialog = ({ open, onOpenChange, children }: { open: boolean; onOpenChange:
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="relative bg-background text-foreground rounded-lg shadow-lg w-full max-w-lg border border-border" onClick={(e) => e.stopPropagation()}>
                 <button
                     onClick={() => onOpenChange(false)}
                     className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
