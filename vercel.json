@@ -1,16 +1,13 @@
 {
     "version": 2,
+    "buildCommand": "cd frontend && npm install && npm run build",
+    "outputDirectory": "frontend/.next",
+    "installCommand": "npm install && cd frontend && npm install",
+    "framework": "nextjs",
     "rewrites": [
         {
             "source": "/api/:match*",
             "destination": "/api/index.js"
-        }
-    ],
-    "redirects": [
-        {
-            "source": "/api",
-            "destination": "/api/",
-            "permanent": true
         }
     ]
 }
