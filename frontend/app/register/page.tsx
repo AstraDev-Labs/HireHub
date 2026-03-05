@@ -544,7 +544,7 @@ export default function RegisterPage() {
             </Card>
 
             <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-                <DialogContent className="sm:max-w-md border-border bg-card text-card-foreground p-0 overflow-hidden rounded-2xl shadow-2xl">
+                <DialogContent className="sm:max-w-md !bg-white dark:!bg-[#0a0f1c] text-foreground p-0 overflow-hidden rounded-2xl shadow-2xl border border-border z-[9999]">
                     <div className="p-6">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-black uppercase tracking-tight">Identity Confirmation</DialogTitle>
