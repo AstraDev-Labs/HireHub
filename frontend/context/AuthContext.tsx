@@ -45,18 +45,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
+            // Skip check if we are on login/register and don't HAVE a token hint
+            const isPublicPage = pathname.includes('/login') || pathname.includes('/register');
+            const hasToken = !!localStorage.getItem('token'); // Hint that we might be logged in
+
+            if (isPublicPage && !hasToken) {
+                setLoading(false);
+                return;
+            }
+
             try {
                 // This GET request will also capture the CSRF token in the interceptor
                 const { data } = await api.get('/users/me');
                 const userData = data.data.user;
                 setUser(userData);
                 localStorage.setItem('user', JSON.stringify(userData));
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Initial session check failed:', err);
-                const storedUser = localStorage.getItem('user');
-                const token = localStorage.getItem('token');
-                if (storedUser && token) {
-                    setUser(JSON.parse(storedUser));
+
+                // If it's a 401 or 403, we definitely don't have a valid session
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setUser(null);
+                } else {
+                    const storedUser = localStorage.getItem('user');
+                    if (storedUser && hasToken) {
+                        setUser(JSON.parse(storedUser));
+                    }
                 }
             } finally {
                 setLoading(false);
@@ -64,7 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
 
         fetchCurrentUser();
-    }, []);
+    }, [pathname]); // Depend on pathname to re-check if user navigates away from login
 
     const login = (token: string, _refreshToken: string, userData: User, isProfileComplete: boolean = true) => {
         // Store token in localStorage for Bearer header (backward compat)
