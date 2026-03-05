@@ -17,8 +17,9 @@ export default function CompaniesPage() {
     const { user } = useAuth();
 
     useEffect(() => {
-        if (user?.role === 'COMPANY' && user.companyId) {
-            router.push(`/companies/${user.companyId}`);
+        if (!user) return;
+        if (user.role === 'COMPANY' && user.companyId) {
+            router.replace(`/companies/${user.companyId}`);
             return;
         }
         fetchCompanies();
@@ -54,7 +55,16 @@ export default function CompaniesPage() {
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Loading companies...</div>;
+    if (loading || (user?.role === 'COMPANY' && user.companyId)) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-muted-foreground font-medium animate-pulse">
+                    {user?.role === 'COMPANY' ? 'Redirecting to your dashboard...' : 'Loading companies...'}
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
