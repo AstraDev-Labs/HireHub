@@ -153,12 +153,13 @@ export default function RegisterPage() {
 
     // Auto-generate username logic
     useEffect(() => {
-        if (!role || !form) return;
-        let generatedUsername = "";
         const fullName = form.watch("fullName");
         const deptName = form.watch("department");
         const batchYear = form.watch("batchYear");
         const companyId = form.watch("companyId");
+
+        if (!role || !form) return;
+        let generatedUsername = "";
 
         if ((role === 'STUDENT' || role === 'STAFF') && fullName && deptName) {
             const names = fullName.trim().split(/\s+/);
@@ -193,7 +194,7 @@ export default function RegisterPage() {
         if (generatedUsername) {
             form.setValue("username", generatedUsername);
         }
-    }, [role, departments, companies, form]);
+    }, [role, departments, companies, form, form.watch("fullName"), form.watch("department"), form.watch("batchYear"), form.watch("companyId")]);
 
     const handleSendPhoneOTP = async () => {
         const email = form.getValues('email');
@@ -332,18 +333,24 @@ export default function RegisterPage() {
                             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">I am a... <span className="text-destructive">*</span></label>
-                                    <select className={cn(inputClass, "bg-muted/50 h-11 border-border focus:ring-primary")} value={role} onChange={(e) => form.setValue("role", e.target.value as any)}>
-                                        <option value="STUDENT">Student</option>
-                                        <option value="COMPANY">Company Staff</option>
-                                        <option value="PARENT">Parent</option>
-                                        <option value="STAFF">College Staff</option>
+                                    <select
+                                        className={cn(inputClass, "bg-muted/50 h-11 border-border focus:ring-primary dark:bg-slate-900 dark:text-foreground")}
+                                        value={role}
+                                        onChange={(e) => form.setValue("role", e.target.value as any)}
+                                    >
+                                        <option value="STUDENT" className="dark:bg-slate-900">Student</option>
+                                        <option value="COMPANY" className="dark:bg-slate-900">Company Staff</option>
+                                        <option value="PARENT" className="dark:bg-slate-900">Parent</option>
+                                        <option value="STAFF" className="dark:bg-slate-900">College Staff</option>
                                     </select>
+                                    <p className="text-[10px] text-muted-foreground ml-1">Select your primary role in the portal.</p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="fullName">Full Name <span className="text-destructive">*</span></label>
                                     <Input id="fullName" placeholder="John Doe" {...form.register("fullName")}
                                         className={cn("bg-muted/50 h-11 border-border focus:ring-primary", form.formState.errors.fullName ? "border-destructive ring-destructive/20" : "")} />
+                                    <p className="text-[10px] text-muted-foreground ml-1">Used to generate your official username.</p>
                                     {form.formState.errors.fullName && <p className="text-xs font-medium text-destructive ml-1">{form.formState.errors.fullName.message}</p>}
                                 </div>
 
@@ -352,12 +359,14 @@ export default function RegisterPage() {
                                     <Input id="username" placeholder="johndoe123" {...form.register("username")}
                                         readOnly={['STUDENT', 'STAFF', 'COMPANY'].includes(role)}
                                         className={cn("bg-muted/50 h-11 border-border font-mono", ['STUDENT', 'STAFF', 'COMPANY'].includes(role) && "opacity-70 cursor-not-allowed")} />
+                                    <p className="text-[10px] text-primary/70 font-medium ml-1">This is your permanent login ID.</p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="email">Email <span className="text-destructive">*</span></label>
                                     <Input id="email" type="email" placeholder="m@example.com" {...form.register("email")}
                                         className={cn("bg-muted/50 h-11 border-border focus:ring-primary", form.formState.errors.email ? "border-destructive ring-destructive/20" : "")} />
+                                    <p className="text-[10px] text-muted-foreground ml-1">Verification OTP will be sent here.</p>
                                     {form.formState.errors.email && <p className="text-xs font-medium text-destructive ml-1">{form.formState.errors.email.message}</p>}
                                 </div>
 
@@ -365,19 +374,27 @@ export default function RegisterPage() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Department</label>
-                                            <select className={cn(inputClass, "bg-muted/50 h-11 border-border")} value={form.watch('department')} onChange={(e) => form.setValue("department", e.target.value)}>
-                                                <option value="">Select</option>
-                                                {departments.map((d: any) => <option key={d.id || d._id} value={d.name}>{d.name}</option>)}
+                                            <select
+                                                className={cn(inputClass, "bg-muted/50 h-11 border-border dark:bg-slate-900 dark:text-foreground")}
+                                                value={form.watch('department')}
+                                                onChange={(e) => form.setValue("department", e.target.value)}
+                                            >
+                                                <option value="" className="dark:bg-slate-900">Select</option>
+                                                {departments.map((d: any) => <option key={d.id || d._id} value={d.name} className="dark:bg-slate-900">{d.name}</option>)}
                                             </select>
                                         </div>
                                         {role === 'STUDENT' && (
                                             <div className="space-y-2">
                                                 <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Batch</label>
-                                                <select className={cn(inputClass, "bg-muted/50 h-11 border-border")} value={form.watch('batchYear')} onChange={(e) => form.setValue("batchYear", e.target.value)}>
-                                                    <option value="">Year</option>
+                                                <select
+                                                    className={cn(inputClass, "bg-muted/50 h-11 border-border dark:bg-slate-900 dark:text-foreground")}
+                                                    value={form.watch('batchYear')}
+                                                    onChange={(e) => form.setValue("batchYear", e.target.value)}
+                                                >
+                                                    <option value="" className="dark:bg-slate-900">Year</option>
                                                     {Array.from({ length: 10 }, (_, i) => {
                                                         const year = new Date().getFullYear() - i;
-                                                        return <option key={year} value={year.toString()}>{year}</option>
+                                                        return <option key={year} value={year.toString()} className="dark:bg-slate-900">{year}</option>
                                                     })}
                                                 </select>
                                             </div>
@@ -389,9 +406,13 @@ export default function RegisterPage() {
                                     <div className="space-y-4">
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Company</label>
-                                            <select className={cn(inputClass, "bg-muted/50 h-11 border-border")} value={form.watch('companyId')} onChange={(e) => form.setValue("companyId", e.target.value)}>
-                                                <option value="">Select Company</option>
-                                                {companies.map((c: any) => <option key={c.id || c._id} value={c.id || c._id}>{c.name}</option>)}
+                                            <select
+                                                className={cn(inputClass, "bg-muted/50 h-11 border-border dark:bg-slate-900 dark:text-foreground")}
+                                                value={form.watch('companyId')}
+                                                onChange={(e) => form.setValue("companyId", e.target.value)}
+                                            >
+                                                <option value="" className="dark:bg-slate-900">Select Company</option>
+                                                {companies.map((c: any) => <option key={c.id || c._id} value={c.id || c._id} className="dark:bg-slate-900">{c.name}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-2">
