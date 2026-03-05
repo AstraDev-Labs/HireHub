@@ -11,6 +11,9 @@ let baseURL = process.env.NEXT_PUBLIC_API_URL || '';
 if (baseURL && !baseURL.endsWith('/api')) {
     baseURL = baseURL.replace(/\/$/, '') + '/api';
 }
+if (!baseURL) {
+    baseURL = '/api';
+}
 
 const api = axios.create({
     baseURL: baseURL, // Requires NEXT_PUBLIC_API_URL in production
