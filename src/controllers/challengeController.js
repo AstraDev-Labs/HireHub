@@ -58,15 +58,15 @@ exports.getChallenge = async (req, res, next) => {
     }
 };
 
-const PISTON_LANGUAGE_MAP = {
-    'javascript': { language: 'javascript', version: '18.15.0' },
-    'python': { language: 'python', version: '3.10.0' },
-    'java': { language: 'java', version: '15.0.2' },
-    'cpp': { language: 'c++', version: '10.2.0' },
-    'c': { language: 'c', version: '10.2.0' }
+const REXTESTER_LANGUAGE_MAP = {
+    'javascript': 17,
+    'python': 24,
+    'java': 4,
+    'cpp': 7,
+    'c': 28
 };
 
-// --- Submissions & Execution (Piston Integration - Free) ---
+// --- Submissions & Execution (Rextester Integration - Free & Stable) ---
 
 exports.submitSolution = async (req, res, next) => {
     try {
@@ -78,8 +78,8 @@ exports.submitSolution = async (req, res, next) => {
             return next(new AppError('No challenge found with that ID', 404));
         }
 
-        const langConfig = PISTON_LANGUAGE_MAP[language.toLowerCase()];
-        if (!langConfig) {
+        const rextesterLangId = REXTESTER_LANGUAGE_MAP[language.toLowerCase()];
+        if (!rextesterLangId) {
             return next(new AppError('Unsupported language', 400));
         }
 
@@ -92,33 +92,26 @@ exports.submitSolution = async (req, res, next) => {
             status: 'Pending'
         });
 
-        // 2. Prepare payload for Piston (No API Key required)
+        // 2. Prepare payload for Rextester
         const sampleTestCase = challenge.testCases ? challenge.testCases[0] : { input: "", output: "" };
 
-        const pistonPayload = {
-            language: langConfig.language,
-            version: langConfig.version,
-            files: [
-                {
-                    name: `solution.${language === 'cpp' ? 'cpp' : (language === 'java' ? 'java' : (language === 'python' ? 'py' : 'js'))}`,
-                    content: code
-                }
-            ],
-            stdin: sampleTestCase.input || ""
+        const rextesterPayload = {
+            LanguageChoice: rextesterLangId,
+            Program: code,
+            Input: sampleTestCase.input || ""
         };
 
-        const response = await axios.post('https://emkc.org/api/v2/piston/execute', pistonPayload);
-        const { run, compile } = response.data;
+        const response = await axios.post('https://rextester.com/rundotnet/api', rextesterPayload);
+        const { Result, Errors, Warnings, Stats } = response.data;
 
-        // Piston results: run.stdout, run.stderr, run.code, run.signal, compile.output (if any)
-        const stdout = run.stdout || "";
-        const stderr = run.stderr || "";
-        const compile_output = compile ? compile.output : null;
+        // Rextester results: Result (stdout), Errors (stderr/compile_error)
+        const stdout = Result || "";
+        const stderr = Errors || "";
 
-        // 3. Simple status logic (Piston doesn't do "Accepted" internally, we compare output)
+        // 3. Status logic
         let finalStatus = 'Runtime Error';
-        if (run.code === 0) {
-            // Check if output matches expected (basic trim check for now)
+        if (!Errors || Errors.trim() === "") {
+            // Check if output matches expected
             const expected = (sampleTestCase.output || "").trim();
             const actual = stdout.trim();
 
@@ -127,8 +120,13 @@ exports.submitSolution = async (req, res, next) => {
             } else {
                 finalStatus = 'Wrong Answer';
             }
-        } else if (compile && compile.code !== 0) {
-            finalStatus = 'Compilation Error';
+        } else {
+            // Distinguish compile error from runtime if possible
+            if (Errors.toLowerCase().includes('error') || Errors.toLowerCase().includes('compilation')) {
+                finalStatus = 'Compilation Error';
+            } else {
+                finalStatus = 'Runtime Error';
+            }
         }
 
         await Submission.update({ id: submission.id }, {
@@ -136,10 +134,9 @@ exports.submitSolution = async (req, res, next) => {
             executionResult: {
                 stdout,
                 stderr,
-                compile_output,
-                time: 0, // Piston doesn't provide time/memory in this format directly
-                memory: 0,
-                exit_code: run.code
+                stats: Stats,
+                time: 0,
+                memory: 0
             }
         });
 
@@ -151,13 +148,12 @@ exports.submitSolution = async (req, res, next) => {
                 execution: {
                     stdout,
                     stderr,
-                    compile_output,
-                    code: run.code
+                    stats: Stats
                 }
             }
         });
     } catch (error) {
-        console.error("Piston Error:", error.response?.data || error.message);
+        console.error("Rextester Error:", error.response?.data || error.message);
         next(new AppError('Error executing code. Please try again later.', 500));
     }
 };
