@@ -11,6 +11,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, Play, Send, Layout, Terminal, CheckCircle2, XCircle, Clock, Cpu, Code2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const decodeHTMLEntities = (text: string) => {
+    if (typeof window === 'undefined') return text;
+    const textArea = document.createElement('textarea');
+    textArea.innerHTML = text;
+    return textArea.value;
+};
+
 export default function ChallengeDetailPage() {
     const { id } = useParams();
     const router = useRouter();
@@ -31,7 +38,7 @@ export default function ChallengeDetailPage() {
 
                 // Set initial code from snippet if available
                 const snippet = data.codeSnippets?.find((s: any) => s.language === 'javascript');
-                if (snippet) setCode(snippet.code);
+                if (snippet) setCode(decodeHTMLEntities(snippet.code));
             } catch (error) {
                 toast.error("Failed to load challenge");
                 router.push('/challenges');
@@ -47,7 +54,7 @@ export default function ChallengeDetailPage() {
         // Find snippet for new language
         const snippet = challenge.codeSnippets?.find((s: any) => s.language.toLowerCase() === newLang.toLowerCase());
         if (snippet) {
-            setCode(snippet.code);
+            setCode(decodeHTMLEntities(snippet.code));
         } else {
             // Default empty or simple boilerplate if no snippet found
             if (newLang === 'python') setCode('# Write your code here\n');
