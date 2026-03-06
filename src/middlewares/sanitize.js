@@ -30,6 +30,18 @@ function sanitizeObject(obj) {
         if (key.startsWith('$')) {
             continue; // silently drop dangerous keys
         }
+
+        // Whitelist fields that need to retain raw characters like < and >
+        if (['code', 'stdin', 'testCases', 'codeSnippets', 'constraints'].includes(key)) {
+            // Keep NoSQL key sanitization but skip the HTML entity escaping
+            if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+                clean[key] = sanitizeObject(obj[key]); // Still protect nested objects from NoSQL injections
+            } else {
+                clean[key] = obj[key];
+            }
+            continue;
+        }
+
         clean[key] = sanitizeValue(obj[key]);
     }
     return clean;
