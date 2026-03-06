@@ -58,33 +58,28 @@ exports.getChallenge = async (req, res, next) => {
     }
 };
 
-const LANGUAGE_MAP = {
-    'javascript': 63,
-    'python': 71,
-    'java': 62,
-    'cpp': 54,
-    'c': 50
+const PISTON_LANGUAGE_MAP = {
+    'javascript': { language: 'javascript', version: '18.15.0' },
+    'python': { language: 'python', version: '3.10.0' },
+    'java': { language: 'java', version: '15.0.2' },
+    'cpp': { language: 'c++', version: '10.2.0' },
+    'c': { language: 'c', version: '10.2.0' }
 };
 
-// --- Submissions & Execution (Judge0 Integration) ---
+// --- Submissions & Execution (Piston Integration - Free) ---
 
 exports.submitSolution = async (req, res, next) => {
     try {
         const { challengeId, language, code } = req.body;
         const studentId = req.user.id;
 
-        // Ensure Judge0 is configured
-        if (!process.env.JUDGE0_API_HOST || !process.env.JUDGE0_API_KEY) {
-            return next(new AppError('Coding execution engine (Judge0) is not configured by the admin.', 500));
-        }
-
         const challenge = await Challenge.findById(challengeId);
         if (!challenge) {
             return next(new AppError('No challenge found with that ID', 404));
         }
 
-        const languageId = LANGUAGE_MAP[language.toLowerCase()];
-        if (!languageId) {
+        const langConfig = PISTON_LANGUAGE_MAP[language.toLowerCase()];
+        if (!langConfig) {
             return next(new AppError('Unsupported language', 400));
         }
 
@@ -97,51 +92,54 @@ exports.submitSolution = async (req, res, next) => {
             status: 'Pending'
         });
 
-        // 2. Prepare payload for Judge0 (Base64 encoded for reliability)
+        // 2. Prepare payload for Piston (No API Key required)
         const sampleTestCase = challenge.testCases ? challenge.testCases[0] : { input: "", output: "" };
 
-        const options = {
-            method: 'POST',
-            url: `https://${process.env.JUDGE0_API_HOST}/submissions`,
-            params: { base64_encoded: 'true', wait: 'true' },
-            headers: {
-                'content-type': 'application/json',
-                'X-RapidAPI-Key': process.env.JUDGE0_API_KEY,
-                'X-RapidAPI-Host': process.env.JUDGE0_API_HOST
-            },
-            data: {
-                source_code: Buffer.from(code).toString('base64'),
-                language_id: languageId,
-                stdin: Buffer.from(sampleTestCase.input || "").toString('base64'),
-                expected_output: Buffer.from(sampleTestCase.output || "").toString('base64')
-            }
+        const pistonPayload = {
+            language: langConfig.language,
+            version: langConfig.version,
+            files: [
+                {
+                    name: `solution.${language === 'cpp' ? 'cpp' : (language === 'java' ? 'java' : (language === 'python' ? 'py' : 'js'))}`,
+                    content: code
+                }
+            ],
+            stdin: sampleTestCase.input || ""
         };
 
-        const response = await axios.request(options);
-        const { status, stdout, stderr, compile_output, time, memory } = response.data;
+        const response = await axios.post('https://emkc.org/api/v2/piston/execute', pistonPayload);
+        const { run, compile } = response.data;
 
-        // Decode results from base64
-        const decodedStdout = stdout ? Buffer.from(stdout, 'base64').toString() : null;
-        const decodedStderr = stderr ? Buffer.from(stderr, 'base64').toString() : null;
-        const decodedCompileOutput = compile_output ? Buffer.from(compile_output, 'base64').toString() : null;
+        // Piston results: run.stdout, run.stderr, run.code, run.signal, compile.output (if any)
+        const stdout = run.stdout || "";
+        const stderr = run.stderr || "";
+        const compile_output = compile ? compile.output : null;
 
-        // 3. Update submission with results
-        let finalStatus = 'Pending';
-        if (status.id === 3) finalStatus = 'Accepted';
-        else if (status.id === 4) finalStatus = 'Wrong Answer';
-        else if (status.id === 5) finalStatus = 'Time Limit Exceeded';
-        else if (status.id === 6) finalStatus = 'Compilation Error';
-        else finalStatus = 'Runtime Error';
+        // 3. Simple status logic (Piston doesn't do "Accepted" internally, we compare output)
+        let finalStatus = 'Runtime Error';
+        if (run.code === 0) {
+            // Check if output matches expected (basic trim check for now)
+            const expected = (sampleTestCase.output || "").trim();
+            const actual = stdout.trim();
+
+            if (expected === "" || actual === expected) {
+                finalStatus = 'Accepted';
+            } else {
+                finalStatus = 'Wrong Answer';
+            }
+        } else if (compile && compile.code !== 0) {
+            finalStatus = 'Compilation Error';
+        }
 
         await Submission.update({ id: submission.id }, {
             status: finalStatus,
             executionResult: {
-                stdout: decodedStdout,
-                stderr: decodedStderr,
-                compile_output: decodedCompileOutput,
-                time: parseFloat(time),
-                memory: parseFloat(memory),
-                status_id: status.id
+                stdout,
+                stderr,
+                compile_output,
+                time: 0, // Piston doesn't provide time/memory in this format directly
+                memory: 0,
+                exit_code: run.code
             }
         });
 
@@ -151,15 +149,15 @@ exports.submitSolution = async (req, res, next) => {
                 submissionId: submission.id,
                 result: finalStatus,
                 execution: {
-                    ...response.data,
-                    stdout: decodedStdout,
-                    stderr: decodedStderr,
-                    compile_output: decodedCompileOutput
+                    stdout,
+                    stderr,
+                    compile_output,
+                    code: run.code
                 }
             }
         });
     } catch (error) {
-        console.error("Judge0 Error:", error.response?.data || error.message);
+        console.error("Piston Error:", error.response?.data || error.message);
         next(new AppError('Error executing code. Please try again later.', 500));
     }
 };
