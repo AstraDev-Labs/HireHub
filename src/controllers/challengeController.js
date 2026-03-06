@@ -58,15 +58,15 @@ exports.getChallenge = async (req, res, next) => {
     }
 };
 
-const REXTESTER_LANGUAGE_MAP = {
-    'javascript': 17,
-    'python': 24,
-    'java': 4,
-    'cpp': 7,
-    'c': 28
+const WANDBOX_LANGUAGE_MAP = {
+    'javascript': 'nodejs-20.17.0',
+    'python': 'cpython-3.14.0',
+    'java': 'openjdk-jdk-21.0.4+7',
+    'cpp': 'gcc-head',
+    'c': 'gcc-head-c'
 };
 
-// --- Submissions & Execution (Rextester Integration - Free & Stable) ---
+// --- Submissions & Execution (Wandbox Integration - Free & Unblocked) ---
 
 exports.submitSolution = async (req, res, next) => {
     try {
@@ -78,8 +78,8 @@ exports.submitSolution = async (req, res, next) => {
             return next(new AppError('No challenge found with that ID', 404));
         }
 
-        const rextesterLangId = REXTESTER_LANGUAGE_MAP[language.toLowerCase()];
-        if (!rextesterLangId) {
+        const wandboxCompilerId = WANDBOX_LANGUAGE_MAP[language.toLowerCase()];
+        if (!wandboxCompilerId) {
             return next(new AppError('Unsupported language', 400));
         }
 
@@ -92,31 +92,26 @@ exports.submitSolution = async (req, res, next) => {
             status: 'Pending'
         });
 
-        // 2. Prepare payload for Rextester
+        // 2. Prepare payload for Wandbox
         const sampleTestCase = challenge.testCases ? challenge.testCases[0] : { input: "", output: "" };
 
-        const rextesterPayload = {
-            LanguageChoice: rextesterLangId,
-            Program: code,
-            Input: sampleTestCase.input || ""
+        const wandboxPayload = {
+            compiler: wandboxCompilerId,
+            code: code,
+            stdin: sampleTestCase.input || "",
+            save: false
         };
 
-        const response = await axios.post('https://rextester.com/rundotnet/api', rextesterPayload, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'Referer': 'https://rextester.com/'
-            }
-        });
-        const { Result, Errors, Warnings, Stats } = response.data;
+        const response = await axios.post('https://wandbox.org/api/compile.json', wandboxPayload);
+        const { status, program_output, compiler_error, program_error } = response.data;
 
-        // Rextester results: Result (stdout), Errors (stderr/compile_error)
-        const stdout = Result || "";
-        const stderr = Errors || "";
+        // Wandbox results: program_output (stdout), compiler_error/program_error (stderr)
+        const stdout = program_output || "";
+        const stderr = compiler_error || program_error || "";
 
         // 3. Status logic
         let finalStatus = 'Runtime Error';
-        if (!Errors || Errors.trim() === "") {
+        if (status === '0') {
             // Check if output matches expected
             const expected = (sampleTestCase.output || "").trim();
             const actual = stdout.trim();
@@ -127,8 +122,8 @@ exports.submitSolution = async (req, res, next) => {
                 finalStatus = 'Wrong Answer';
             }
         } else {
-            // Distinguish compile error from runtime if possible
-            if (Errors.toLowerCase().includes('error') || Errors.toLowerCase().includes('compilation')) {
+            // Distinguish compile error from runtime
+            if (compiler_error) {
                 finalStatus = 'Compilation Error';
             } else {
                 finalStatus = 'Runtime Error';
@@ -140,7 +135,6 @@ exports.submitSolution = async (req, res, next) => {
             executionResult: {
                 stdout,
                 stderr,
-                stats: Stats,
                 time: 0,
                 memory: 0
             }
@@ -154,12 +148,12 @@ exports.submitSolution = async (req, res, next) => {
                 execution: {
                     stdout,
                     stderr,
-                    stats: Stats
+                    status_code: status
                 }
             }
         });
     } catch (error) {
-        console.error("Rextester Error:", error.response?.data || error.message);
+        console.error("Wandbox Error:", error.response?.data || error.message);
         next(new AppError('Error executing code. Please try again later.', 500));
     }
 };
