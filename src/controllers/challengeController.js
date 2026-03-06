@@ -73,6 +73,11 @@ exports.submitSolution = async (req, res, next) => {
         const { challengeId, language, code } = req.body;
         const studentId = req.user.id;
 
+        // Ensure Judge0 is configured
+        if (!process.env.JUDGE0_API_HOST || !process.env.JUDGE0_API_KEY) {
+            return next(new AppError('Coding execution engine (Judge0) is not configured by the admin.', 500));
+        }
+
         const challenge = await Challenge.findById(challengeId);
         if (!challenge) {
             return next(new AppError('No challenge found with that ID', 404));

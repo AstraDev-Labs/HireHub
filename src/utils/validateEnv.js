@@ -19,6 +19,8 @@ const optionalButWarned = [
     'EMAIL_PASSWORD',
     'EMAIL_HOST',
     'FRONTEND_URL',
+    'JUDGE0_API_KEY',
+    'JUDGE0_API_HOST',
 ];
 
 function validateEnv() {
