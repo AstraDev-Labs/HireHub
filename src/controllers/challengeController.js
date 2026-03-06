@@ -61,7 +61,7 @@ exports.getChallenge = async (req, res, next) => {
 const WANDBOX_LANGUAGE_MAP = {
     'javascript': 'nodejs-20.17.0',
     'python': 'cpython-3.14.0',
-    'java': 'openjdk-jdk-21.0.4+7',
+    'java': 'openjdk-jdk-21+35',
     'cpp': 'gcc-head',
     'c': 'gcc-head-c'
 };

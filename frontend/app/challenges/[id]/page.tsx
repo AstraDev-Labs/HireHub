@@ -60,6 +60,7 @@ export default function ChallengeDetailPage() {
             if (newLang === 'python') setCode('# Write your code here\n');
             else if (newLang === 'java') setCode('public class Main {\n    public static void main(String[] args) {\n        \n    }\n}');
             else if (newLang === 'cpp') setCode('#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}');
+            else if (newLang === 'c') setCode('#include <stdio.h>\n\nint main() {\n    return 0;\n}');
             else setCode('');
         }
     };
@@ -113,6 +114,7 @@ export default function ChallengeDetailPage() {
                         <option value="javascript">JavaScript</option>
                         <option value="python">Python</option>
                         <option value="cpp">C++</option>
+                        <option value="c">C</option>
                         <option value="java">Java</option>
                     </select>
                     <Button
