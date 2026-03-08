@@ -2,12 +2,19 @@ const Challenge = require('../models/Challenge');
 const Submission = require('../models/Submission');
 const AppError = require('../utils/AppError');
 const axios = require('axios');
+const { logAction } = require('../utils/auditLogger');
 
 // --- Challenges ---
 
 exports.createChallenge = async (req, res, next) => {
     try {
         const { title, description, difficulty, topicTags, testCases, codeSnippets, constraints } = req.body;
+
+        // Check for existing challenge with same title
+        const existingChallenges = await Challenge.scan().where('title').eq(title).exec();
+        if (existingChallenges.length > 0) {
+            return next(new AppError('A challenge with this title already exists.', 400));
+        }
 
         const challenge = await Challenge.create({
             title,
@@ -17,8 +24,11 @@ exports.createChallenge = async (req, res, next) => {
             testCases,
             codeSnippets,
             constraints,
-            createdBy: req.user.id
+            createdBy: req.user._id || req.user.id
         });
+
+        // Audit Logging
+        await logAction(req, 'CREATE', 'Challenge', challenge.id, `Created challenge: ${title}`);
 
         res.status(201).json({
             status: 'success',
@@ -32,10 +42,26 @@ exports.createChallenge = async (req, res, next) => {
 exports.getAllChallenges = async (req, res, next) => {
     try {
         const challenges = await Challenge.scan().exec();
+        let solvedCount = 0;
+
+        // If user is a student, calculate how many unique challenges they've solved
+        if (req.user && req.user.role === 'STUDENT') {
+            const studentSubmissions = await Submission.query('studentId').eq(req.user.id).using('StudentSubmissionIndex').exec();
+            const solvedChallengeIds = new Set(
+                studentSubmissions
+                    .filter(sub => sub.status === 'Accepted')
+                    .map(sub => sub.challengeId)
+            );
+            solvedCount = solvedChallengeIds.size;
+        }
+
         res.status(200).json({
             status: 'success',
             results: challenges.length,
-            data: { challenges }
+            data: { 
+                challenges,
+                solvedCount 
+            }
         });
     } catch (error) {
         next(error);
@@ -52,6 +78,44 @@ exports.getChallenge = async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             data: { challenge }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.updateChallenge = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { title, description, difficulty, topicTags, testCases, codeSnippets, constraints } = req.body;
+
+        const challenge = await Challenge.findById(id);
+        if (!challenge) {
+            return next(new AppError('No challenge found with that ID', 404));
+        }
+
+        const updates = {
+            title,
+            description,
+            difficulty,
+            topicTags,
+            testCases,
+            codeSnippets,
+            constraints
+        };
+
+        // Remove undefined fields
+        Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);
+
+        await Challenge.update({ id }, updates);
+        const updatedChallenge = await Challenge.findById(id);
+
+        // Audit Logging
+        await logAction(req, 'UPDATE', 'Challenge', id, `Updated challenge: ${updatedChallenge.title}`);
+
+        res.status(200).json({
+            status: 'success',
+            data: { challenge: updatedChallenge }
         });
     } catch (error) {
         next(error);
@@ -92,49 +156,66 @@ exports.submitSolution = async (req, res, next) => {
             status: 'Pending'
         });
 
-        // 2. Prepare payload for Wandbox
-        const sampleTestCase = challenge.testCases ? challenge.testCases[0] : { input: "", output: "" };
+        // 2. Run all test cases
+        const testResults = [];
+        let finalStatus = 'Accepted';
+        const testCasesToRun = challenge.testCases || [];
 
-        const wandboxPayload = {
-            compiler: wandboxCompilerId,
-            code: code,
-            stdin: sampleTestCase.input || "",
-            save: false
-        };
-
-        const response = await axios.post('https://wandbox.org/api/compile.json', wandboxPayload);
-        const { status, program_output, compiler_error, program_error } = response.data;
-
-        // Wandbox results: program_output (stdout), compiler_error/program_error (stderr)
-        const stdout = program_output || "";
-        const stderr = compiler_error || program_error || "";
-
-        // 3. Status logic
-        let finalStatus = 'Runtime Error';
-        if (status === '0') {
-            // Check if output matches expected
-            const expected = (sampleTestCase.output || "").trim();
-            const actual = stdout.trim();
-
-            if (expected === "" || actual === expected) {
-                finalStatus = 'Accepted';
-            } else {
-                finalStatus = 'Wrong Answer';
-            }
+        if (testCasesToRun.length === 0) {
+            finalStatus = 'Accepted'; // Default if no test cases
         } else {
-            // Distinguish compile error from runtime
-            if (compiler_error) {
-                finalStatus = 'Compilation Error';
-            } else {
-                finalStatus = 'Runtime Error';
+            for (let i = 0; i < testCasesToRun.length; i++) {
+                const tc = testCasesToRun[i];
+                const wandboxPayload = {
+                    compiler: wandboxCompilerId,
+                    code: code,
+                    stdin: tc.input || "",
+                    save: false
+                };
+
+                const response = await axios.post('https://wandbox.org/api/compile.json', wandboxPayload);
+                const { status, program_output, compiler_error, program_error } = response.data;
+                const stdout = program_output || "";
+                const stderr = compiler_error || program_error || "";
+
+                let tcStatus = 'Runtime Error';
+                if (status === '0') {
+                    const expected = (tc.output || "").trim();
+                    const actual = stdout.trim();
+                    if (expected === "" || actual === expected) {
+                        tcStatus = 'Accepted';
+                    } else {
+                        tcStatus = 'Wrong Answer';
+                    }
+                } else if (compiler_error) {
+                    tcStatus = 'Compilation Error';
+                } else {
+                    tcStatus = 'Runtime Error';
+                }
+
+                testResults.push({
+                    testCaseIndex: i,
+                    status: tcStatus,
+                    stdout,
+                    stderr,
+                    isSample: tc.isSample
+                });
+
+                if (tcStatus !== 'Accepted') {
+                    finalStatus = tcStatus;
+                    // For now, we stop at the first failing test case
+                    break;
+                }
             }
         }
+
+        const lastResult = testResults[testResults.length - 1] || { stdout: "", stderr: "" };
 
         await Submission.update({ id: submission.id }, {
             status: finalStatus,
             executionResult: {
-                stdout,
-                stderr,
+                stdout: lastResult.stdout,
+                stderr: lastResult.stderr,
                 time: 0,
                 memory: 0
             }
@@ -146,10 +227,11 @@ exports.submitSolution = async (req, res, next) => {
                 submissionId: submission.id,
                 result: finalStatus,
                 execution: {
-                    stdout,
-                    stderr,
-                    status_code: status
-                }
+                    stdout: lastResult.stdout,
+                    stderr: lastResult.stderr,
+                    status_code: finalStatus === 'Accepted' ? '0' : '1'
+                },
+                testResults: testResults // Return results for all run test cases
             }
         });
     } catch (error) {
@@ -168,6 +250,32 @@ exports.getSubmissionStatus = async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             data: { submission }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.getChallengeSubmissions = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const submissions = await Submission.findAll({ challengeId: id });
+        
+        const Student = require('../models/Student');
+        const results = await Promise.all(submissions.map(async (s) => {
+            const student = await Student.findByUserId(s.studentId);
+            const subObj = typeof s.toJSON === 'function' ? s.toJSON() : s;
+            return {
+                ...subObj,
+                studentName: student?.name || 'Unknown Student',
+                studentEmail: student?.email || 'Unknown Email'
+            };
+        }));
+
+        res.status(200).json({
+            status: 'success',
+            results: results.length,
+            data: { submissions: results }
         });
     } catch (error) {
         next(error);

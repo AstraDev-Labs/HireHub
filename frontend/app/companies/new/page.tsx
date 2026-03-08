@@ -166,7 +166,7 @@ export default function AddCompanyPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Min CGPA</label>
-                                <Input type="number" step="0.1" {...form.register("minCgpa")} />
+                                <Input type="number" step="0.1" min={0} max={10} {...form.register("minCgpa")} />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Website</label>

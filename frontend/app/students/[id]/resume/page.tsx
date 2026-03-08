@@ -40,6 +40,7 @@ interface Profile {
     name: string;
     email: string;
     phone?: string;
+    resumeLink?: string;
     education?: Education[];
     experience?: Experience[];
     projects?: Project[];
@@ -100,11 +101,13 @@ export default function StudentResumePage() {
         experience = [],
         projects = [],
         skills = [],
-        socialLinks = { github: '', linkedin: '', portfolio: '' }
+        socialLinks = { github: '', linkedin: '', portfolio: '' },
+        resumeLink
     } = profile;
 
-    // A student hasn't touched the Resume Builder if all these are empty
+    // A student hasn't touched the Resume Builder if all these are empty, AND they have no uploaded resumeLink
     const hasResumeData = education.length > 0 || experience.length > 0 || projects.length > 0 || skills.length > 0;
+    const hasAnyResume = hasResumeData || !!resumeLink;
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12 print:max-w-none print:pb-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -128,15 +131,19 @@ export default function StudentResumePage() {
                 )}
             </div>
 
-            {!hasResumeData ? (
+            {!hasAnyResume ? (
                 <Card className="border-dashed border-2 bg-muted/20 print:hidden mt-8">
                     <CardContent className="py-20 flex flex-col items-center justify-center text-center">
                         <FileText className="h-16 w-16 text-muted mb-4 opacity-50" />
                         <h3 className="text-xl font-semibold text-foreground mb-2">No Resume Data</h3>
-                        <p className="text-muted-foreground max-w-md">
-                            This student has not built their resume yet using the Resume Builder tool.
+                        <p className="text-muted-foreground max-w-md mb-4">
+                            This student has not built their resume yet using the Resume Builder tool, and no PDF resume was uploaded.
                         </p>
                     </CardContent>
+                </Card>
+            ) : !hasResumeData && resumeLink ? (
+                <Card className="mt-8 border print:border-none shadow-sm h-[800px] overflow-hidden">
+                    <iframe src={resumeLink} className="w-full h-full border-0 print:block" title="Student Resume" />
                 </Card>
             ) : (
                 <div className="w-full h-full flex flex-col rounded-xl overflow-hidden print:overflow-visible">
@@ -257,6 +264,15 @@ export default function StudentResumePage() {
 
                         </div>
                     </div>
+                    {/* Fallback link to uploaded resume if also available and generated data is present */}
+                    {resumeLink && (
+                        <div className="mt-8 p-4 bg-muted/30 rounded-xl border border-border print:hidden text-center">
+                            <p className="text-muted-foreground mb-3">This student also has an uploaded PDF resume.</p>
+                            <a href={resumeLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                                <FileText className="h-4 w-4 mr-2" /> View Original Uploaded PDF
+                            </a>
+                        </div>
+                    )}
                 </div>
             )}
 

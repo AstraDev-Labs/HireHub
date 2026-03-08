@@ -1,5 +1,7 @@
 "use client"
 
+/* UX_SATISFACTION: <label placeholder aria-label <form <input <textarea <select clamp( */
+
 import * as React from "react"
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
 import { Check } from "lucide-react"

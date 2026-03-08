@@ -1,25 +1,16 @@
-"use client";
+import { Metadata } from "next";
+import HomeClient from "./HomeClient";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+export const metadata: Metadata = {
+  title: "Home | HireHub - Campus Placement Management System",
+  description: "Join 10,000+ students and top companies on HireHub, the most advanced campus placement management platform. Streamline your career journey today.",
+  openGraph: {
+    title: "HireHub - Empowering Campus Placements",
+    description: "The next-generation platform connecting talent with opportunity.",
+    images: ["/og-image.jpg"],
+  },
+};
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
-    }
-  }, [router]);
-
-  return (
-    <div className="flex items-center justify-center p-24">
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-    </div>
-  );
+  return <HomeClient />;
 }
-
-// aria-label placeholder

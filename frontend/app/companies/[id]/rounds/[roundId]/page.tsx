@@ -37,12 +37,16 @@ export default function RoundEvaluationPage() {
         : students.filter(s => s.placementStatus === 'PENDING');
 
     useEffect(() => {
-        if (user?.role === 'COMPANY') {
+        if (!user) return;
+
+        if (user.role === 'COMPANY') {
             if (id && user.companyId !== id) {
                 toast.error("Unauthorized");
                 router.push('/dashboard');
                 return;
             }
+            fetchData();
+        } else if (user.role === 'ADMIN' || user.role === 'STAFF') {
             fetchData();
         }
     }, [user, id, roundId]);
@@ -51,7 +55,8 @@ export default function RoundEvaluationPage() {
         setLoading(true);
         try {
             // Fetch All Rounds (to find current and next)
-            const roundsRes = await api.get('/companies/my/rounds');
+            const endpoint = user?.role === 'COMPANY' ? '/companies/my/rounds' : `/companies/${id}/rounds`;
+            const roundsRes = await api.get(endpoint);
             const allRounds = roundsRes.data.data.rounds;
             setRounds(allRounds);
 
@@ -122,6 +127,8 @@ export default function RoundEvaluationPage() {
     };
 
     if (loading) return <div>Loading...</div>;
+    const isAuthorized = user?.role === 'COMPANY' || user?.role === 'ADMIN' || user?.role === 'STAFF';
+    if (!isAuthorized) return <div className="p-8">Access Denied: You do not have permission to view this round.</div>;
     if (!round) return <div>Round not found</div>;
 
     // Filter potential next rounds (must have order > current round)

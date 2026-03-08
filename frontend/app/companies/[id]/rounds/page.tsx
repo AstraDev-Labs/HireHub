@@ -42,12 +42,15 @@ export default function CompanyRoundsPage() {
             // If we are ADMIN or viewing as student, we might need a different endpoint.
             // But this page is likely for Company Staff to MANAGE rounds.
 
-            let endpoint = '/companies/my/rounds';
-            // If we are NOT the company staff, this might fail unless we implement Admin view.
-            // For now, assume this page is for Company Context.
+            let endpoint = '';
+            if (user?.role === 'COMPANY') {
+                endpoint = '/companies/my/rounds';
+            } else {
+                endpoint = `/companies/${id}/rounds`;
+            }
 
             const { data } = await api.get(endpoint);
-            setRounds(data.data.rounds);
+            setRounds(data.data.rounds || []);
         } catch (err) {
             console.error(err);
             // toast.error("Failed to load rounds");
@@ -57,20 +60,17 @@ export default function CompanyRoundsPage() {
     };
 
     useEffect(() => {
-        if (user?.role === 'COMPANY') {
-            // Strict check: User's Company ID must match the URL ID (if present and valid)
-            // Note: The Sidebar links to /companies/[user.companyId]/rounds
-            // If user manually changes URL to another company ID, we should block it.
+        if (!user) return;
 
+        if (user.role === 'COMPANY') {
             if (id && user.companyId !== id) {
                 toast.error("Unauthorized access to another company's rounds.");
                 router.push('/dashboard');
                 return;
             }
-
             fetchRounds();
-        } else if (user && user.role !== 'COMPANY') {
-            // Admin might be able to view? For now restrict.
+        } else if (user.role === 'ADMIN' || user.role === 'STAFF') {
+            fetchRounds();
         }
     }, [user, id, router]);
 
@@ -80,7 +80,12 @@ export default function CompanyRoundsPage() {
                 await api.patch(`/companies/rounds/${editingRound._id}`, roundForm);
                 toast.success("Round updated");
             } else {
-                await api.post('/companies/rounds', roundForm);
+                // For Admin/Staff, we must explicitly provide the companyId for the company we are managing
+                const payload: any = { ...roundForm };
+                if (user?.role === 'ADMIN' || user?.role === 'STAFF') {
+                    payload.companyId = id as string;
+                }
+                await api.post('/companies/rounds', payload);
                 toast.success("Round created");
             }
             setIsRoundModalOpen(false);
@@ -119,7 +124,8 @@ export default function CompanyRoundsPage() {
     };
 
     if (loading) return <div>Loading...</div>;
-    if (user?.role !== 'COMPANY') return <div className="p-8">Access Denied: Only Company Staff can manage rounds here.</div>;
+    const isAuthorized = user?.role === 'COMPANY' || user?.role === 'ADMIN' || user?.role === 'STAFF';
+    if (!isAuthorized) return <div className="p-8">Access Denied: Only authorized staff can manage rounds here.</div>;
 
     return (
         <div className="space-y-6 container mx-auto py-8">

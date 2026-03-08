@@ -6,13 +6,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
-import { MapPin, Trash } from 'lucide-react';
+import { MapPin, Trash, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Input } from '@/components/ui/input';
+import { useMemo } from 'react';
 import toast from 'react-hot-toast';
 
 export default function CompaniesPage() {
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
     const { user } = useAuth();
 
@@ -55,6 +58,14 @@ export default function CompaniesPage() {
         }
     };
 
+    const filteredCompanies = useMemo(() => {
+        return companies.filter((company: any) => 
+            company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (Array.isArray(company.location) ? company.location.join(' ') : company.location || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            company.hiringStatus.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [companies, searchQuery]);
+
     if (loading || (user?.role === 'COMPANY' && user.companyId)) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -78,8 +89,18 @@ export default function CompaniesPage() {
                 )}
             </div>
 
+            <div className="mb-8 relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Search by company name, location, or status..." 
+                    className="pl-10 h-10 bg-card/50 border-border hover:border-primary/50 transition-colors"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {companies.map((company: any) => (
+                {filteredCompanies.map((company: any) => (
                     <Card key={company._id} className="hover:shadow-lg transition-shadow cursor-pointer bg-card text-card-foreground border-border" onClick={() => router.push(`/companies/${company._id}`)}>
                         <CardHeader>
                             <div className="flex justify-between items-start">
@@ -91,13 +112,13 @@ export default function CompaniesPage() {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="text-sm text-muted-foreground flex items-center">
-                                <MapPin className="w-4 h-4 mr-1.5" /> {company.location || 'Remote'}
+                                <MapPin className="w-4 h-4 mr-1.5" /> {(Array.isArray(company.location) && company.location.length > 0) ? company.location.join(', ') : 'Remote'}
                             </div>
                             <div className="text-sm font-semibold text-foreground">
-                                Package: <span className="text-primary">{company.packageLpa} LPA</span>
+                                Package: <span className="text-primary">{company.packageLpa ? `${company.packageLpa} LPA` : 'N/A'}</span>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                                Min CGPA: <span className="font-medium text-foreground">{company.minCgpa}</span>
+                                Min CGPA: <span className="font-medium text-foreground">{company.minCgpa || 'N/A'}</span>
                             </div>
                         </CardContent>
                         <CardFooter className="flex justify-between">
@@ -114,9 +135,9 @@ export default function CompaniesPage() {
                 ))}
             </div>
 
-            {companies.length === 0 && (
+            {filteredCompanies.length === 0 && (
                 <div className="text-center text-muted-foreground mt-12 animate-in fade-in duration-500">
-                    No companies have been added yet.
+                    No results found for your search.
                 </div>
             )}
         </div>

@@ -29,7 +29,8 @@ const offerLetterSchema = new dynamoose.Schema({
         default: 'ISSUED'
     },
     remarks: String,
-    issuedBy: String
+    issuedBy: String,
+    attachmentUrl: String
 }, {
     timestamps: true
 });

@@ -198,17 +198,23 @@ export default function CompanyDetailsPage() {
                                 )}>
                                     {company.hiringStatus === 'OPEN' ? '🟢 Recruitment Open' : '⚪ Recruitment Paused'}
                                 </Badge>
-                                {company.location.map((loc: string, idx: number) => (
-                                    <Badge key={idx} variant="outline" className="border-border/50 bg-background/50 text-muted-foreground font-bold text-[10px] uppercase px-3 py-1">
-                                        {loc}
+                                {Array.isArray(company.location) && company.location.length > 0 ? (
+                                    company.location.map((loc: string, idx: number) => (
+                                        <Badge key={idx} variant="outline" className="border-border/50 bg-background/50 text-muted-foreground font-bold text-[10px] uppercase px-3 py-1">
+                                            {loc}
+                                        </Badge>
+                                    ))
+                                ) : (
+                                    <Badge variant="outline" className="border-border/50 bg-background/50 text-muted-foreground font-bold text-[10px] uppercase px-3 py-1">
+                                        Remote
                                     </Badge>
-                                ))}
+                                )}
                             </div>
                         </div>
-                        {(user?.role === 'COMPANY' && user.companyId === id) && (
+                        {((user?.role === 'COMPANY' && user.companyId === id) || user?.role === 'ADMIN' || user?.role === 'STAFF') && (
                             <div className="flex flex-wrap gap-2">
                                 <Button onClick={() => setIsEditModalOpen(true)} variant="outline" className="border-border hover:bg-muted font-bold text-[10px] uppercase tracking-widest h-10 px-6">Edit Profile</Button>
-                                <Button onClick={() => router.push(`/companies/${id}/rounds`)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[10px] uppercase tracking-widest h-10 px-6 shadow-xl shadow-primary/20">Manage Pipeline</Button>
+                                <Button onClick={() => router.push(`/companies/${id}/rounds`)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[10px] uppercase tracking-widest h-10 px-6 shadow-xl shadow-primary/20">Manage Rounds</Button>
                             </div>
                         )}
                         {user?.role === 'STUDENT' && (
@@ -330,7 +336,7 @@ export default function CompanyDetailsPage() {
                             </div>
                             <div>
                                 <label className="text-sm font-medium">Min CGPA</label>
-                                <Input type="number" step="0.1" value={editForm.minCgpa} onChange={(e) => setEditForm({ ...editForm, minCgpa: parseFloat(e.target.value) })} />
+                                <Input type="number" step="0.1" min={0} max={10} value={editForm.minCgpa} onChange={(e) => setEditForm({ ...editForm, minCgpa: parseFloat(e.target.value) })} />
                             </div>
                             <div>
                                 <label className="text-sm font-medium">Hiring Status</label>

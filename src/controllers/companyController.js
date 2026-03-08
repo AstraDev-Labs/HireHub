@@ -21,6 +21,10 @@ exports.createCompany = catchAsync(async (req, res, next) => {
         req.body.location = [req.body.location];
     }
 
+    if (req.body.minCgpa !== undefined && (parseFloat(req.body.minCgpa) < 0 || parseFloat(req.body.minCgpa) > 10)) {
+        return next(new AppError('Minimum CGPA must be between 0 and 10.', 400));
+    }
+
     const newCompany = await Company.create(req.body);
     const obj = typeof newCompany.toJSON === 'function' ? newCompany.toJSON() : { ...newCompany };
     obj._id = obj.id;
@@ -33,7 +37,7 @@ exports.getAllCompanies = catchAsync(async (req, res, next) => {
     const result = companies.map(c => {
         const obj = typeof c.toJSON === 'function' ? c.toJSON() : { ...c };
         obj._id = obj.id;
-        return { _id: obj.id, name: obj.name, website: obj.website, hiringStatus: obj.hiringStatus };
+        return obj;
     });
 
     res.status(200).json({ status: 'success', results: result.length, data: { companies: result } });
@@ -42,6 +46,10 @@ exports.getAllCompanies = catchAsync(async (req, res, next) => {
 exports.updateCompany = catchAsync(async (req, res, next) => {
     if (req.body.jobRole && !req.body.jobRoles) req.body.jobRoles = [req.body.jobRole];
     if (req.body.location && !Array.isArray(req.body.location)) req.body.location = [req.body.location];
+
+    if (req.body.minCgpa !== undefined && (parseFloat(req.body.minCgpa) < 0 || parseFloat(req.body.minCgpa) > 10)) {
+        return next(new AppError('Minimum CGPA must be between 0 and 10.', 400));
+    }
 
     const existing = await Company.findById(req.params.id);
     if (!existing) return next(new AppError('No company found with that ID', 404));
@@ -78,6 +86,10 @@ exports.updateCompanyProfile = catchAsync(async (req, res, next) => {
     if (!req.user.companyId) return next(new AppError('You are not linked to any company.', 400));
     if (req.body.location && !Array.isArray(req.body.location)) req.body.location = [req.body.location];
 
+    if (req.body.minCgpa !== undefined && (parseFloat(req.body.minCgpa) < 0 || parseFloat(req.body.minCgpa) > 10)) {
+        return next(new AppError('Minimum CGPA must be between 0 and 10.', 400));
+    }
+
     await Company.update({ id: req.user.companyId }, req.body);
     const updatedCompany = await Company.findById(req.user.companyId);
     const obj = typeof updatedCompany.toJSON === 'function' ? updatedCompany.toJSON() : { ...updatedCompany };
@@ -89,9 +101,15 @@ exports.updateCompanyProfile = catchAsync(async (req, res, next) => {
 // --- Round Management ---
 
 exports.createRound = catchAsync(async (req, res, next) => {
-    if (!req.user.companyId) return next(new AppError('You are not linked to any company.', 400));
+    let companyId = req.user.companyId;
 
-    const newRound = await Round.create({ ...req.body, companyId: req.user.companyId });
+    if (!companyId && (req.user.role === 'ADMIN' || req.user.role === 'STAFF')) {
+        companyId = req.body.companyId;
+    }
+
+    if (!companyId) return next(new AppError('Company ID required to create a round.', 400));
+
+    const newRound = await Round.create({ ...req.body, companyId });
     const obj = typeof newRound.toJSON === 'function' ? newRound.toJSON() : { ...newRound };
     obj._id = obj.id;
 
@@ -114,8 +132,11 @@ exports.getRounds = catchAsync(async (req, res, next) => {
 
 exports.updateRound = catchAsync(async (req, res, next) => {
     const round = await Round.findById(req.params.id);
-    if (!round || round.companyId !== req.user.companyId) {
-        return next(new AppError('No round found with that ID or you do not have permission', 404));
+    if (!round) return next(new AppError('No round found with that ID', 404));
+
+    // Permission check: Own company OR Staff/Admin
+    if (round.companyId !== req.user.companyId && req.user.role !== 'ADMIN' && req.user.role !== 'STAFF') {
+        return next(new AppError('You do not have permission to update this round', 403));
     }
 
     await Round.update({ id: req.params.id }, req.body);
@@ -128,8 +149,10 @@ exports.updateRound = catchAsync(async (req, res, next) => {
 
 exports.deleteRound = catchAsync(async (req, res, next) => {
     const round = await Round.findById(req.params.id);
-    if (!round || round.companyId !== req.user.companyId) {
-        return next(new AppError('No round found or permission denied', 404));
+    if (!round) return next(new AppError('No round found with that ID', 404));
+
+    if (round.companyId !== req.user.companyId && req.user.role !== 'ADMIN' && req.user.role !== 'STAFF') {
+        return next(new AppError('Permission denied to delete this round', 403));
     }
 
     await Round.delete({ id: req.params.id });
@@ -144,11 +167,14 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
     }
 
     const round = await Round.findById(roundId);
-    if (!round || round.companyId !== req.user.companyId) {
-        return next(new AppError('Round not found or permission denied', 404));
+    if (!round) return next(new AppError('Round not found', 404));
+
+    if (round.companyId !== req.user.companyId && req.user.role !== 'ADMIN' && req.user.role !== 'STAFF') {
+        return next(new AppError('Permission denied for this evaluation', 403));
     }
 
-    const company = await Company.findById(req.user.companyId);
+    const companyId = round.companyId;
+    const company = await Company.findById(companyId);
     const sendEmail = require('../utils/sendEmail');
     const results = [];
 

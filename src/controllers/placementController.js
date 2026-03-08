@@ -123,6 +123,13 @@ exports.updatePlacementStatus = catchAsync(async (req, res, next) => {
 exports.getStudentPlacementStatus = catchAsync(async (req, res, next) => {
     const studentId = req.params.studentId;
 
+    if (req.user.role === 'STUDENT') {
+        const student = await Student.findByUserId(req.user._id);
+        if (!student || student.id !== studentId) {
+            return next(new AppError('You are not authorized to view this placement status', 403));
+        }
+    }
+
     const statuses = await StudentPlacementStatus.findByStudentId(studentId);
 
     const result = [];

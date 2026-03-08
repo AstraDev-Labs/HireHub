@@ -2,11 +2,27 @@ const PlacementDrive = require('../models/PlacementDrive');
 const Company = require('../models/Company');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const { logAction } = require('../utils/auditLogger');
 
 // Get all drives (sorted by date)
 exports.getAllDrives = catchAsync(async (req, res) => {
     const drives = await PlacementDrive.findAll();
-    const sorted = drives.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Auto-delete expired drives
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const validDrives = [];
+    for (const drive of drives) {
+        if (new Date(drive.date) < today) {
+            // Expired, delete it
+            await PlacementDrive.delete({ id: drive.id });
+        } else {
+            validDrives.push(drive);
+        }
+    }
+
+    const sorted = validDrives.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     const result = sorted.map(d => {
         const obj = typeof d.toJSON === 'function' ? d.toJSON() : { ...d };
@@ -17,9 +33,31 @@ exports.getAllDrives = catchAsync(async (req, res) => {
     res.status(200).json({ status: 'success', data: { drives: result } });
 });
 
+// Get single drive
+exports.getDrive = catchAsync(async (req, res, next) => {
+    const drive = await PlacementDrive.findById(req.params.id);
+    if (!drive) return next(new AppError('Drive not found', 404));
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(drive.date) < today) {
+        await PlacementDrive.delete({ id: drive.id });
+        return next(new AppError('Drive has expired and has been deleted', 404));
+    }
+
+    const obj = typeof drive.toJSON === 'function' ? drive.toJSON() : { ...drive };
+    obj._id = obj.id;
+
+    res.status(200).json({ status: 'success', data: { drive: obj } });
+});
+
 // Create drive (Admin/Staff/Company)
 exports.createDrive = catchAsync(async (req, res, next) => {
     let { companyId, title, description, date, time, venue, driveType, eligibleDepartments, minCgpa } = req.body;
+
+    if (minCgpa !== undefined && (parseFloat(minCgpa) < 0 || parseFloat(minCgpa) > 10)) {
+        return next(new AppError('Min CGPA must be between 0 and 10.', 400));
+    }
 
     if (req.user.role === 'COMPANY') {
         companyId = req.user.companyId;
@@ -61,6 +99,9 @@ exports.createDrive = catchAsync(async (req, res, next) => {
         await Notification.createBulk(notifications);
     }
 
+    // Audit Logging
+    await logAction(req, 'CREATE', 'Drive', drive.id, `Created placement drive: ${title} for ${company.name}`);
+
     const obj = typeof drive.toJSON === 'function' ? drive.toJSON() : { ...drive };
     obj._id = obj.id;
 
@@ -82,8 +123,16 @@ exports.updateDrive = catchAsync(async (req, res, next) => {
         if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
+    if (updates.minCgpa !== undefined && (parseFloat(updates.minCgpa) < 0 || parseFloat(updates.minCgpa) > 10)) {
+        return next(new AppError('Min CGPA must be between 0 and 10.', 400));
+    }
+
     await PlacementDrive.update({ id: drive.id }, updates);
     const updated = await PlacementDrive.findById(drive.id);
+
+    // Audit Logging
+    await logAction(req, 'UPDATE', 'Drive', drive.id, `Updated placement drive: ${updated.title}`);
+
     const obj = typeof updated.toJSON === 'function' ? updated.toJSON() : { ...updated };
     obj._id = obj.id;
 
@@ -100,5 +149,9 @@ exports.deleteDrive = catchAsync(async (req, res, next) => {
     }
 
     await PlacementDrive.delete({ id: drive.id });
+
+    // Audit Logging
+    await logAction(req, 'DELETE', 'Drive', drive.id, `Deleted placement drive: ${drive.title}`);
+
     res.status(200).json({ status: 'success', message: 'Drive deleted' });
 });

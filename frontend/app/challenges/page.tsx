@@ -6,11 +6,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
-import { Code2, ChevronRight, Trophy, Zap } from 'lucide-react';
+import { Code2, ChevronRight, Trophy, Zap, CheckCircle2, Search } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Input } from '@/components/ui/input';
+import { useMemo } from 'react';
 
 export default function ChallengesPage() {
+    const { user } = useAuth();
     const [challenges, setChallenges] = useState([]);
+    const [solvedCount, setSolvedCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
 
     useEffect(() => {
@@ -18,6 +24,7 @@ export default function ChallengesPage() {
             try {
                 const res = await api.get('/challenges');
                 setChallenges(res.data.data.challenges);
+                setSolvedCount(res.data.data.solvedCount || 0);
             } catch (error) {
                 console.error("Failed to fetch challenges", error);
             } finally {
@@ -36,6 +43,14 @@ export default function ChallengesPage() {
         }
     };
 
+    const filteredChallenges = useMemo(() => {
+        return challenges.filter((challenge: any) => 
+            challenge.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            challenge.difficulty.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            challenge.topicTags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }, [challenges, searchQuery]);
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -49,27 +64,48 @@ export default function ChallengesPage() {
         <div className="container mx-auto px-4 py-10 max-w-6xl animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
                 <div className="space-y-2">
-                    <h1 className="text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-                        <Code2 className="w-10 h-10 text-primary" />
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+                        <Code2 className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                         Coding Challenges
                     </h1>
-                    <p className="text-muted-foreground text-lg">
+                    <p className="text-muted-foreground text-sm md:text-lg">
                         Master your skills with LeetCode-style practice problems.
                     </p>
                 </div>
-                <div className="flex gap-4">
-                    <Card className="bg-primary/5 border-primary/10 px-6 py-3 flex items-center gap-3">
-                        <Trophy className="w-6 h-6 text-primary" />
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">My Points</p>
-                            <p className="text-xl font-bold">1,250</p>
-                        </div>
-                    </Card>
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                    {(user?.role === 'ADMIN' || user?.role === 'STAFF') && (
+                        <Button
+                            onClick={() => router.push('/challenges/create')}
+                            className="bg-primary hover:bg-primary/90 text-white font-bold px-6 shadow-lg shadow-primary/20 flex items-center justify-center gap-2 w-full sm:w-auto"
+                        >
+                            <Zap className="w-5 h-5 fill-white" />
+                            Create Challenge
+                        </Button>
+                    )}
+                    {user?.role === 'STUDENT' && (
+                        <Card className="bg-primary/5 border-primary/10 px-4 py-2 md:px-6 md:py-3 flex items-center gap-3 w-full sm:w-auto">
+                            <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
+                            <div>
+                                <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Programs Completed</p>
+                                <p className="text-lg md:text-xl font-bold">{solvedCount}</p>
+                            </div>
+                        </Card>
+                    )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {challenges.map((challenge: any) => (
+            <div className="mb-8 relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Search by title, difficulty, or tags..." 
+                    className="pl-10 h-12 bg-card/50 backdrop-blur-sm border-border hover:border-primary/50 transition-colors"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+                {filteredChallenges.map((challenge: any) => (
                     <Card
                         key={challenge.id}
                         className="group relative overflow-hidden border-border hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer bg-card/50 backdrop-blur-sm"
@@ -110,11 +146,11 @@ export default function ChallengesPage() {
                 ))}
             </div>
 
-            {challenges.length === 0 && (
+            {filteredChallenges.length === 0 && (
                 <div className="text-center py-20 bg-muted/20 border-2 border-dashed border-border rounded-2xl animate-in zoom-in-95 duration-500">
                     <Code2 className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-foreground">No challenges yet</h3>
-                    <p className="text-muted-foreground mt-2">Check back soon for new coding problems!</p>
+                    <h3 className="text-xl font-bold text-foreground">No matches found</h3>
+                    <p className="text-muted-foreground mt-2">Try adjusting your search terms.</p>
                 </div>
             )}
         </div>

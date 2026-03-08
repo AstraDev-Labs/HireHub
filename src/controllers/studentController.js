@@ -33,7 +33,13 @@ exports.completeProfile = catchAsync(async (req, res, next) => {
     if (req.body.phone) updates.phone = req.body.phone;
     if (req.body.department) updates.department = req.body.department;
     if (req.body.batchYear) updates.batchYear = req.body.batchYear;
-    if (req.body.cgpa) updates.cgpa = req.body.cgpa;
+
+    if (req.body.cgpa !== undefined) {
+        if (parseFloat(req.body.cgpa) < 0 || parseFloat(req.body.cgpa) > 10) {
+            return next(new AppError('CGPA must be between 0 and 10.', 400));
+        }
+        updates.cgpa = req.body.cgpa;
+    }
 
     await Student.update({ id: student.id }, updates);
     const updated = await Student.findById(student.id);

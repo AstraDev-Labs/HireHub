@@ -57,6 +57,7 @@ const offerLetterRoutes = require('./routes/offerLetterRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
 const challengeRoutes = require('./routes/challengeRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Start Express App
 const app = express();
@@ -143,6 +144,7 @@ app.use('/api/offers', offerLetterRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/challenges', challengeRoutes);
+app.use('/api/admin', adminRoutes);
 
 // High-performance health check route for load testing / root API pinging
 app.get('/api', (req, res) => {

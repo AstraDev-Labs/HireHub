@@ -138,7 +138,7 @@ Student.countAll = async function (filter = {}) {
 };
 
 Student.searchByName = async function (query) {
-    return Student.scan().where('name').contains(query).attributes(['name', 'department', 'batchYear', 'phone', 'id']).exec();
+    return Student.scan().where('name').contains(query).attributes(['name', 'email', 'department', 'batchYear', 'phone', 'id']).exec();
 };
 
 module.exports = Student;

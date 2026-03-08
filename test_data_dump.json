@@ -1,0 +1,119 @@
+{
+  "students": [
+    {
+      "experience": [],
+      "department": "Computer Science and Engineering",
+      "batchYear": 2020,
+      "resumeLink": "https://cpmsresumes.s3.eu-north-1.amazonaws.com/attachments/1772597656138-755776491.pdf",
+      "projects": [],
+      "createdAt": "2026-03-03T15:14:25.612Z",
+      "cgpa": 9.2,
+      "socialLinks": {
+        "portfolio": "https://cybernexus-portfolio.vercel.app/",
+        "github": "https://github.com/TharunG2006",
+        "linkedin": "https://www.linkedin.com/in/tharun-g-b5b53a260/"
+      },
+      "email": "tarun.ganapathi2007@gmail.com",
+      "name": "Tharun G",
+      "education": [],
+      "placementStatus": "NOT_PLACED",
+      "updatedAt": "2026-03-04T04:14:18.013Z",
+      "userId": "06694c0c-c305-4663-9df8-0807ffcb2929",
+      "skills": [],
+      "id": "3570af18-3c0c-4452-8979-173afc733881",
+      "phone": "8056300117"
+    },
+    {
+      "experience": [],
+      "department": "Computer Science and Engineering",
+      "batchYear": 2024,
+      "projects": [],
+      "createdAt": "2026-03-05T11:31:31.617Z",
+      "cgpa": 0,
+      "socialLinks": {},
+      "email": "afzalalikah@gmail.com",
+      "name": "AFZAL ALI K A H",
+      "education": [],
+      "userId": "c2355320-d71c-4670-a33f-83336caa960a",
+      "placementStatus": "NOT_PLACED",
+      "updatedAt": "2026-03-05T11:31:31.617Z",
+      "skills": [],
+      "id": "62e58f49-b9bf-46e8-a241-562349a25966",
+      "phone": "9751234707"
+    }
+  ],
+  "drives": [
+    {
+      "eligibleDepartments": [],
+      "companyId": "588f9f87-8b48-4ebe-abe9-1bf04dc7ea1a",
+      "minCgpa": 8.6,
+      "companyName": "Google",
+      "status": "UPCOMING",
+      "createdAt": "2026-03-08T05:18:49.711Z",
+      "time": "00:48",
+      "venue": "Auditorium",
+      "createdBy": "9f4353e0-60bf-45d1-9107-472995ac9c0a",
+      "driveType": "ON_CAMPUS",
+      "date": "2026-03-14",
+      "updatedAt": "2026-03-08T05:18:49.711Z",
+      "description": "test",
+      "id": "f68ca087-a9d5-40d1-b579-be826dedf893",
+      "title": "Software Engineer"
+    }
+  ],
+  "companies": [
+    {
+      "website": "https://google.com",
+      "eligibleDepartments": [
+        "CSE",
+        "ECE"
+      ],
+      "location": [],
+      "minCgpa": 8.5,
+      "jobRoles": [
+        "Software Engineer"
+      ],
+      "createdAt": "2026-03-03T09:13:42.824Z",
+      "email": "careers@google.com",
+      "name": "Google",
+      "hiringStatus": "OPEN",
+      "updatedAt": "2026-03-03T09:13:42.824Z",
+      "packageLpa": 32,
+      "description": "Search engine giant.",
+      "id": "588f9f87-8b48-4ebe-abe9-1bf04dc7ea1a"
+    },
+    {
+      "website": "https://amazon.jobs",
+      "eligibleDepartments": [
+        "CSE",
+        "IT",
+        "ECE"
+      ],
+      "location": [],
+      "minCgpa": 8,
+      "jobRoles": [
+        "SDE-1"
+      ],
+      "createdAt": "2026-03-03T09:13:59.310Z",
+      "email": "jobs@amazon.com",
+      "name": "Amazon",
+      "hiringStatus": "OPEN",
+      "updatedAt": "2026-03-03T09:13:59.310Z",
+      "packageLpa": 28,
+      "description": "E-commerce giant.",
+      "id": "9e929048-a917-49df-b66c-c99403281938"
+    }
+  ],
+  "rounds": [
+    {
+      "roundName": "Aptitude",
+      "companyId": "588f9f87-8b48-4ebe-abe9-1bf04dc7ea1a",
+      "updatedAt": "2026-03-03T15:52:36.003Z",
+      "createdAt": "2026-03-03T15:52:36.003Z",
+      "roundType": "Aptitude",
+      "description": "",
+      "id": "6649496c-8333-4a04-a333-5d930b5e5275",
+      "roundOrder": 1
+    }
+  ]
+}

@@ -38,7 +38,7 @@ exports.getOffers = catchAsync(async (req, res) => {
 
 // Issue offer (Admin/Staff/Company)
 exports.issueOffer = catchAsync(async (req, res, next) => {
-    const { studentId, companyId, role, packageLpa, joiningDate, offerDate, remarks } = req.body;
+    const { studentId, companyId, role, packageLpa, joiningDate, offerDate, remarks, attachmentUrl } = req.body;
 
     if (!studentId || !companyId) return next(new AppError('Student and Company are required', 400));
 
@@ -69,7 +69,8 @@ exports.issueOffer = catchAsync(async (req, res, next) => {
         joiningDate,
         offerDate: offerDate || new Date().toISOString().split('T')[0],
         remarks,
-        issuedBy: req.user._id
+        issuedBy: req.user._id,
+        attachmentUrl
     });
 
     // Notify student

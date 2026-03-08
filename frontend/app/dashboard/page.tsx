@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
-import { Users, Building2, UserCheck, UserX, TrendingUp, ClipboardList, Clock, CheckCircle, XCircle, BarChart3, AlertCircle, IndianRupee } from 'lucide-react';
+import { Users, Building2, UserCheck, UserX, TrendingUp, ClipboardList, Clock, CheckCircle, XCircle, BarChart3, AlertCircle, IndianRupee, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
@@ -91,6 +91,14 @@ function AdminDashboard({ user }: { user: any }) {
                 <StatCard title="Placement Rate" value={`${stats.placementRate}%`} subtitle="Overall rate" icon={TrendingUp}
                     iconColor={stats.placementRate >= 50 ? "text-green-500" : "text-amber-500"}
                     valueColor={stats.placementRate >= 50 ? "text-green-600" : "text-amber-600"} />
+                <StatCard 
+                    title="Coding Platform" 
+                    value={stats.totalChallenges || 0} 
+                    subtitle="Active challenges" 
+                    icon={Code} 
+                    iconColor="text-primary" 
+                    onClick={() => router.push('/challenges')}
+                />
             </div>
 
             {/* Pending Registrations Alert */}

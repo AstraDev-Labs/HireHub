@@ -148,7 +148,7 @@ export default function ProfilePage() {
         COMPANY: { label: 'Company Staff', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: Briefcase },
         STAFF: { label: 'Staff / HoD', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Building2 },
         ADMIN: { label: 'Administrator', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: Shield },
-        PARENT: { label: 'Parent', color: 'bg-violet-500/10 text-violet-500 border-violet-500/20', icon: Users },
+        PARENT: { label: 'Parent', color: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20', icon: Users },
     };
     const rc = roleConfig[profile.role] || roleConfig.STUDENT;
     const RoleIcon = rc.icon;

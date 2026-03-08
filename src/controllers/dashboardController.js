@@ -3,6 +3,7 @@ const Company = require('../models/Company');
 const StudentPlacementStatus = require('../models/StudentPlacementStatus');
 const OfferLetter = require('../models/OfferLetter');
 const User = require('../models/User');
+const Challenge = require('../models/Challenge');
 const catchAsync = require('../utils/catchAsync');
 
 exports.getDashboardStats = catchAsync(async (req, res, next) => {
@@ -10,6 +11,7 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
     const placedStudents = await Student.countAll({ placementStatus: 'PLACED' });
     const notPlacedStudents = await Student.countAll({ placementStatus: 'NOT_PLACED' });
     const totalCompanies = await Company.countAll();
+    const totalChallenges = await Challenge.countAll();
 
     // Department-wise breakdown
     const allStudents = await Student.findAll();
@@ -80,7 +82,8 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
             pendingRegistrations,
             departmentStats,
             companyStats,
-            salaryStats
+            salaryStats,
+            totalChallenges
         }
     });
 });

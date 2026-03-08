@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Link as LinkIcon, Download, Plus, Trash2, Globe, Building2, Upload, X, FileUp } from 'lucide-react';
+import { FileText, Link as LinkIcon, Download, Plus, Trash2, Globe, Building2, Upload, X, FileUp, Search } from 'lucide-react';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import toast from 'react-hot-toast';
-import { useRef } from 'react';
 
 export default function ResourcesPage() {
     const { user } = useAuth();
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [companies, setCompanies] = useState([]);
 
@@ -114,20 +114,40 @@ export default function ResourcesPage() {
         }
     };
 
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
     const handleDeleteResource = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this resource?")) return;
+        console.log("🚀 DELETE PROCESS START: ", id);
+        
+        if (!id) {
+            toast.error("Resource ID missing!");
+            return;
+        }
+
+        setDeletingId(id);
         try {
-            // Assuming there's a delete endpoint /api/resources/:id
-            // If not we might need to add it, but for now let's use the logic
+            console.log("🔌 Calling DELETE /api/resources/" + id);
             await api.delete(`/resources/${id}`);
             toast.success("Resource deleted");
+            setConfirmingDeleteId(null);
             fetchResources();
         } catch (err: any) {
+            console.error("💥 Delete error:", err);
             toast.error(err.response?.data?.message || "Failed to delete resource");
+        } finally {
+            setDeletingId(null);
         }
     };
 
     const canManage = user?.role && ['ADMIN', 'STAFF', 'COMPANY'].includes(user.role);
+
+    const filteredResources = useMemo(() => {
+        return resources.filter((resource: any) => 
+            resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            resource.companyId?.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [resources, searchQuery]);
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
@@ -285,12 +305,27 @@ export default function ResourcesPage() {
                 )}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mb-8 relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Search resources by title or company..." 
+                    className="pl-10 h-10 bg-card/50 border-border hover:border-primary/50 transition-colors"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {resources.length === 0 ? (
                     <div className="col-span-full flex flex-col items-center justify-center py-20 bg-muted/20 border-2 border-dashed border-border/50 rounded-3xl animate-in zoom-in-95 duration-700">
                         <Globe className="h-16 w-16 text-muted-foreground/30 mb-4 stroke-[1]" />
                         <h3 className="text-xl font-bold uppercase tracking-tight text-muted-foreground">Digital Archives Empty</h3>
                         <p className="text-sm font-medium text-muted-foreground/60 mt-2">Preparation assets awaiting deployment.</p>
+                    </div>
+                ) : filteredResources.length === 0 ? (
+                    <div className="col-span-full text-center text-muted-foreground mt-12 animate-in fade-in duration-500">
+                        <p className="text-lg font-semibold">No results found for your search.</p>
+                        <p className="text-sm">Try adjusting your search terms.</p>
                     </div>
                 ) : (
                     resources.map((res: any) => (
@@ -326,10 +361,32 @@ export default function ResourcesPage() {
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => handleDeleteResource(res._id)}
-                                        className="h-11 w-11 border-destructive/20 text-destructive hover:bg-destructive hover:text-white transition-all rounded-xl"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            console.log("🖱️ TRASH CLICKED. State:", confirmingDeleteId === res._id ? "CONFIRM" : "FIRST_CLICK");
+                                            if (confirmingDeleteId === res._id) {
+                                                handleDeleteResource(res._id);
+                                            } else {
+                                                setConfirmingDeleteId(res._id);
+                                            }
+                                        }}
+                                        className={cn(
+                                            "h-11 transition-all rounded-xl relative flex items-center justify-center",
+                                            confirmingDeleteId === res._id 
+                                                ? "border-destructive bg-destructive text-white hover:bg-destructive/90 w-24 px-2 ring-4 ring-destructive/10" 
+                                                : "border-destructive/20 text-destructive hover:bg-destructive hover:text-white w-11",
+                                            deletingId === res._id && "opacity-50 cursor-not-allowed"
+                                        )}
+                                        disabled={deletingId !== null}
                                     >
-                                        <Trash2 className="h-4 w-4 stroke-[2.5]" />
+                                        {deletingId === res._id ? (
+                                            <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full" />
+                                        ) : confirmingDeleteId === res._id ? (
+                                            <span className="text-[9px] font-black uppercase tracking-widest animate-in fade-in zoom-in-95 duration-200">DELETE?</span>
+                                        ) : (
+                                            <Trash2 className="h-4 w-4 stroke-[2.5]" />
+                                        )}
                                     </Button>
                                 )}
                             </CardFooter>

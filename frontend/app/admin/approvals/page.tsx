@@ -7,12 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
-import { Check, X, UserCheck } from 'lucide-react';
+import { Check, X, UserCheck, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useMemo } from 'react';
 
 export default function ApprovalsPage() {
     const [applications, setApplications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
     const [processingId, setProcessingId] = useState<string | null>(null);
+
+    const filteredApplications = useMemo(() => {
+        return applications.filter(app => 
+            app.studentId?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            app.companyId?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            app.roundId?.roundType?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [applications, searchQuery]);
 
     useEffect(() => {
         fetchApplications();
@@ -53,6 +64,16 @@ export default function ApprovalsPage() {
                 <p className="text-muted-foreground">Review and approve student applications for companies.</p>
             </div>
 
+            <div className="relative max-w-sm mb-6">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Search by student, company, or round..." 
+                    className="pl-10 h-10 bg-card border-border"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
             <Card className="border-border bg-card shadow-sm text-card-foreground">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-bold">
@@ -76,12 +97,12 @@ export default function ApprovalsPage() {
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center h-24">Loading requests...</TableCell>
                                 </TableRow>
-                            ) : applications.length === 0 ? (
+                            ) : filteredApplications.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">No pending approvals found.</TableCell>
+                                    <TableCell colSpan={6} className="text-center h-24">No matches found for your search.</TableCell>
                                 </TableRow>
                             ) : (
-                                applications.map(app => (
+                                filteredApplications.map(app => (
                                     <TableRow key={app._id}>
                                         <TableCell>
                                             <div className="font-semibold text-foreground">{app.studentId?.name}</div>

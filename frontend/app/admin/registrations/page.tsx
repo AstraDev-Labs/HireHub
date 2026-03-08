@@ -7,12 +7,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
-import { Check, X, UserPlus, Users } from 'lucide-react';
+import { Check, X, UserPlus, Users, Search, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useMemo } from 'react';
 
 export default function RegistrationApprovals() {
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [roleFilter, setRoleFilter] = useState('ALL');
     const [processingId, setProcessingId] = useState<string | null>(null);
+
+    const filteredUsers = useMemo(() => {
+        return users.filter(user => {
+            const matchesSearch = 
+                (user.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (user.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (user.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+            
+            const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
+            
+            return matchesSearch && matchesRole;
+        });
+    }, [users, searchQuery, roleFilter]);
 
     useEffect(() => {
         fetchPendingUsers();
@@ -51,6 +68,33 @@ export default function RegistrationApprovals() {
                 <p className="text-muted-foreground font-medium">Approve new students, parents, and company representatives.</p>
             </div>
 
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search by name, username or email..." 
+                        className="pl-10 h-11 bg-card border-border"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <select 
+                        className="h-11 bg-card border border-border rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                    >
+                        <option value="ALL">All Roles</option>
+                        <option value="STUDENT">Student</option>
+                        <option value="COMPANY">Company</option>
+                        <option value="STAFF">Staff</option>
+                        <option value="PARENT">Parent</option>
+                        <option value="COORDINATOR">Coordinator</option>
+                    </select>
+                </div>
+            </div>
+
             <Card className="border-border bg-card text-card-foreground shadow-sm overflow-hidden">
                 <CardHeader className="bg-muted/30 border-b border-border/50 pb-6">
                     <CardTitle className="flex items-center gap-2 text-xl font-bold">
@@ -73,12 +117,12 @@ export default function RegistrationApprovals() {
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center h-24">Loading requests...</TableCell>
                                 </TableRow>
-                            ) : users.length === 0 ? (
+                            ) : filteredUsers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">No pending registrations found.</TableCell>
+                                    <TableCell colSpan={5} className="text-center h-24">No results match your search.</TableCell>
                                 </TableRow>
                             ) : (
-                                users.map(user => (
+                                filteredUsers.map(user => (
                                     <TableRow key={user._id} className="hover:bg-muted/30 transition-colors group">
                                         <TableCell className="font-bold text-foreground py-4">{user.fullName || user.username}</TableCell>
                                         <TableCell className="py-4">

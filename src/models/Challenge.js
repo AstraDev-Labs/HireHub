@@ -61,4 +61,17 @@ Challenge.findById = async function (id) {
     try { return await Challenge.get(id); } catch { return null; }
 };
 
+Challenge.findAll = async function (filter = {}) {
+    let scan = Challenge.scan();
+    for (const [key, value] of Object.entries(filter)) {
+        scan = scan.where(key).eq(value);
+    }
+    return scan.exec();
+};
+
+Challenge.countAll = async function () {
+    const results = await Challenge.scan().exec();
+    return results.length;
+};
+
 module.exports = Challenge;

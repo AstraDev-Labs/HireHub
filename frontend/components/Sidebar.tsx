@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Users, UserCircle, Briefcase, GraduationCap, FileLineChart, LogOut, Building2, MessageSquare, CalendarDays, Bell, FileText, Code2 } from 'lucide-react';
+import { LayoutDashboard, Users, UserCircle, Briefcase, GraduationCap, FileLineChart, LogOut, Building2, MessageSquare, CalendarDays, Bell, FileText, Code2, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -67,12 +67,6 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
         },
         {
-            label: 'Calendar',
-            icon: CalendarDays,
-            href: '/calendar',
-            roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
-        },
-        {
             label: 'Notifications',
             icon: Bell,
             href: '/notifications',
@@ -125,6 +119,12 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             icon: LayoutDashboard,
             href: '/admin',
             roles: ['ADMIN'],
+        },
+        {
+            label: 'Audit Logs',
+            icon: ShieldCheck,
+            href: '/admin/logs',
+            roles: ['ADMIN'],
         }
     ];
 
@@ -149,7 +149,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
 
             {/* Profile Section */}
             {!collapsed && (
-                <div className="px-3 py-6 flex flex-col items-center border-b border-white/5 mx-2 mb-2">
+                <div data-tour="sidebar-profile" className="px-3 py-6 flex flex-col items-center border-b border-white/5 mx-2 mb-2">
                     <div className="h-16 w-16 rounded-full border-2 border-primary/20 p-0.5 mb-3">
                         {user.profileImage ? (
                             <img src={user.profileImage} alt="Profile" className="h-full w-full rounded-full object-cover" />
@@ -180,12 +180,13 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             )}
 
             {/* Nav Links */}
-            <div className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
+            <div className="flex-1 px-2 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
                 {filteredRoutes.map((route) => (
                     <Link
                         key={route.href}
                         href={route.href}
                         title={collapsed ? route.label : undefined}
+                        data-tour={`sidebar-${route.href.replace('/', '').toLowerCase()}`}
                         className={cn(
                             "text-sm group flex items-center w-full font-medium cursor-pointer rounded-lg transition-colors",
                             collapsed ? "p-3 justify-center" : "p-3 justify-start",

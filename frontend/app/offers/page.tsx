@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText, Plus, Trash2, Loader2 } from 'lucide-react';
+import { FileText, Plus, Trash2, Loader2, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -26,6 +26,7 @@ interface Offer {
     offerDate: string;
     status: string;
     remarks: string;
+    attachmentUrl?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -45,6 +46,9 @@ export default function OffersPage() {
     const [submitting, setSubmitting] = useState(false);
     const [studentSearch, setStudentSearch] = useState('');
     const [form, setForm] = useState({ studentId: '', companyId: '', role: '', packageLpa: 0, joiningDate: '', offerDate: '', remarks: '' });
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleOpenCreate = () => {
         setForm({
@@ -56,6 +60,8 @@ export default function OffersPage() {
             offerDate: '',
             remarks: ''
         });
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
         setStudentSearch('');
         setShowCreate(true);
     };
@@ -99,12 +105,33 @@ export default function OffersPage() {
 
     const handleCreate = async () => {
         if (!form.studentId || !form.companyId) { toast.error("Student and Company are required"); return; }
+
+        let fileUrl = '';
+        if (selectedFile) {
+            setUploading(true);
+            try {
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', selectedFile);
+                const { data } = await api.post('/upload', uploadFormData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                fileUrl = data.fileUrl;
+            } catch (err: any) {
+                toast.error(err.response?.data?.message || 'Failed to upload attachment');
+                setUploading(false);
+                return;
+            }
+            setUploading(false);
+        }
+
         setSubmitting(true);
         try {
-            await api.post('/offers', form);
+            await api.post('/offers', { ...form, attachmentUrl: fileUrl });
             toast.success("Offer letter issued!");
             setShowCreate(false);
             setForm({ studentId: '', companyId: '', role: '', packageLpa: 0, joiningDate: '', offerDate: '', remarks: '' });
+            setSelectedFile(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
             fetchOffers();
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Failed to issue offer");
@@ -142,7 +169,7 @@ export default function OffersPage() {
                     </p>
                 </div>
                 {(isAdmin || isCompany) && (
-                    <Button onClick={() => setShowCreate(true)} className="gap-2">
+                    <Button onClick={handleOpenCreate} className="gap-2">
                         <Plus className="h-4 w-4" /> Issue Offer
                     </Button>
                 )}
@@ -197,6 +224,12 @@ export default function OffersPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
+                                            {/* View Attachment */}
+                                            {offer.attachmentUrl && (
+                                                <a href={offer.attachmentUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-blue-500 hover:text-blue-600 hover:bg-blue-50")}>
+                                                    <Paperclip className="h-4 w-4 mr-1" /> View
+                                                </a>
+                                            )}
                                             {/* Student can accept/decline */}
                                             {user?.role === 'STUDENT' && offer.status === 'ISSUED' && (
                                                 <>
@@ -282,11 +315,20 @@ export default function OffersPage() {
                             <label className="text-sm font-medium">Remarks</label>
                             <Textarea value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} placeholder="Optional notes..." />
                         </div>
+                        <div>
+                            <label className="text-sm font-medium">Attachment (PDF/Document)</label>
+                            <Input
+                                type="file"
+                                accept=".pdf,.doc,.docx"
+                                ref={fileInputRef}
+                                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                            />
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-                        <Button onClick={handleCreate} disabled={submitting}>
-                            {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Issuing...</> : 'Issue Offer'}
+                        <Button onClick={handleCreate} disabled={submitting || uploading}>
+                            {(submitting || uploading) ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Issuing...</> : 'Issue Offer'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

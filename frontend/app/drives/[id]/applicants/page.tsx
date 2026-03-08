@@ -19,7 +19,8 @@ interface Applicant {
     _id: string;
     studentId: string;
     status: string;
-    appliedAt: string;
+    createdAt?: string;
+    appliedAt?: string;
     student?: {
         name: string;
         email: string;
@@ -167,7 +168,7 @@ export default function ApplicantsPage() {
                                             </td>
                                             <td className="px-4 py-3">{app.student?.department}</td>
                                             <td className="px-4 py-3 font-semibold">{app.student?.cgpa}</td>
-                                            <td className="px-4 py-3 text-muted-foreground">{new Date(app.appliedAt).toLocaleDateString()}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{new Date(app.createdAt || app.appliedAt || new Date()).toLocaleDateString()}</td>
                                             <td className="px-4 py-3">
                                                 <Badge variant="outline" className={statusColors[app.status]}>
                                                     {app.status}

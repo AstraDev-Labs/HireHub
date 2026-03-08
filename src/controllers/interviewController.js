@@ -1,11 +1,14 @@
 const InterviewSlot = require('../models/InterviewSlot');
 const Company = require('../models/Company');
 const Student = require('../models/Student');
+const User = require('../models/User');
 const Round = require('../models/Round');
 const Notification = require('../models/Notification');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const { v4: uuidv4 } = require('uuid');
+const sendEmail = require('../utils/sendEmail');
+const { logAction } = require('../utils/auditLogger');
 
 exports.createInterviewSlots = catchAsync(async (req, res, next) => {
     // Companies can create slots
@@ -16,7 +19,15 @@ exports.createInterviewSlots = catchAsync(async (req, res, next) => {
         return next(new AppError('Please provide driveId, roundId, and an array of slots.', 400));
     }
 
-    const companyId = req.user.companyId;
+    let companyId = req.user.companyId;
+
+    if (!companyId && (req.user.role === 'ADMIN' || req.user.role === 'STAFF')) {
+        const PlacementDrive = require('../models/PlacementDrive');
+        const drive = await PlacementDrive.findById(driveId);
+        if (!drive) return next(new AppError('Drive not found.', 404));
+        companyId = drive.companyId;
+    }
+
     if (!companyId) {
         return next(new AppError('You must be associated with a company to schedule interviews.', 403));
     }
@@ -34,14 +45,23 @@ exports.createInterviewSlots = catchAsync(async (req, res, next) => {
     const createdSlots = [];
 
     for (const slot of slots) {
-        const student = await Student.findById(slot.studentId);
+        let student;
+        if (slot.studentId) {
+            student = await Student.findById(slot.studentId);
+        } else if (slot.studentEmail) {
+            const tempUser = await User.findByEmail(slot.studentEmail);
+            if (tempUser) {
+                student = await Student.findByUserId(tempUser.id);
+            }
+        }
+
         if (!student) continue;
 
         const newSlot = new InterviewSlot({
             id: uuidv4(),
             driveId,
             companyId,
-            studentId: slot.studentId,
+            studentId: student.id,
             roundId,
             studentName: student.name,
             companyName: company.name,
@@ -55,19 +75,34 @@ exports.createInterviewSlots = catchAsync(async (req, res, next) => {
         await newSlot.save();
         createdSlots.push(newSlot);
 
-        // Notify Student
+        // Notify Student via App
         if (student.userId) {
             const notif = new Notification({
                 id: uuidv4(),
                 userId: student.userId,
                 title: 'Interview Scheduled',
                 message: `An interview has been scheduled with ${company.name} for the ${round.roundName || round.roundType} round on ${new Date(slot.scheduledAt).toLocaleString()}.`,
-                type: 'SYSTEM',
-                isRead: false
+                type: 'ROUND_ANNOUNCEMENT',
+                read: false
             });
             await notif.save();
         }
+
+        // Send Email
+        try {
+            const meetingLinkText = slot.meetLink ? `\n\nMeeting Link: ${slot.meetLink}` : '';
+            await sendEmail({
+                email: student.email,
+                subject: `Interview Scheduled - ${company.name}`,
+                message: `Dear ${student.name},\n\nYour interview with ${company.name} for the ${round.roundName || round.roundType} round has been scheduled.\n\nDate & Time: ${new Date(slot.scheduledAt).toLocaleString()}${meetingLinkText}\n\nGood luck!\n\nRegards,\nPlacement Cell`
+            });
+        } catch (err) {
+            console.error('Failed to send interview email to:', student.email, err);
+        }
     }
+
+    // Audit Logging
+    await logAction(req, 'CREATE', 'Interview', driveId, `Scheduled ${createdSlots.length} interviews for drive: ${driveId}`);
 
     res.status(201).json({
         status: 'success',
@@ -79,7 +114,12 @@ exports.createInterviewSlots = catchAsync(async (req, res, next) => {
 });
 
 exports.getCompanyInterviews = catchAsync(async (req, res, next) => {
-    const companyId = req.user.companyId;
+    let companyId = req.user.companyId;
+
+    if (!companyId && (req.user.role === 'ADMIN' || req.user.role === 'STAFF')) {
+        companyId = req.query.companyId || req.body.companyId;
+    }
+
     if (!companyId) return next(new AppError('Company ID not found.', 403));
 
     const interviews = await InterviewSlot.findByCompanyId(companyId);
@@ -147,6 +187,9 @@ exports.updateInterviewStatus = catchAsync(async (req, res, next) => {
 
     await interview.save();
 
+    // Audit Logging
+    await logAction(req, 'UPDATE', 'Interview', id, `Updated interview status to ${status} for ${interview.studentName}`);
+
     res.status(200).json({
         status: 'success',
         data: {
@@ -163,14 +206,17 @@ exports.deleteInterview = catchAsync(async (req, res, next) => {
         return next(new AppError('Interview slot not found.', 404));
     }
 
-    if (req.user.companyId !== interview.companyId && req.user.role !== 'ADMIN') {
+    if (req.user.companyId !== interview.companyId && req.user.role !== 'ADMIN' && req.user.role !== 'STAFF') {
         return next(new AppError('You do not have permission to delete this interview.', 403));
     }
 
-    await interview.delete();
+    await InterviewSlot.delete({ id: interview.id });
 
-    res.status(204).json({
+    // Audit Logging
+    await logAction(req, 'DELETE', 'Interview', interview.id, `Deleted interview for ${interview.studentName} with ${interview.companyName}`);
+
+    res.status(200).json({
         status: 'success',
-        data: null
+        message: 'Interview slot deleted'
     });
 });

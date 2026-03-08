@@ -51,4 +51,17 @@ Submission.findById = async function (id) {
     try { return await Submission.get(id); } catch { return null; }
 };
 
+Submission.findAll = async function (filter = {}) {
+    let scan = Submission.scan();
+    for (const [key, value] of Object.entries(filter)) {
+        scan = scan.where(key).eq(value);
+    }
+    return scan.exec();
+};
+
+Submission.countAll = async function () {
+    const results = await Submission.scan().exec();
+    return results.length;
+};
+
 module.exports = Submission;

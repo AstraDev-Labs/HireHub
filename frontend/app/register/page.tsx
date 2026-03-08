@@ -332,8 +332,9 @@ export default function RegisterPage() {
                         {step === 1 && (
                             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">I am a... <span className="text-destructive">*</span></label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="role">I am a... <span className="text-destructive">*</span></label>
                                     <select
+                                        id="role"
                                         className={cn(inputClass, "bg-muted/50 h-11 border-border focus:ring-primary")}
                                         value={role}
                                         onChange={(e) => form.setValue("role", e.target.value as any)}
@@ -378,8 +379,9 @@ export default function RegisterPage() {
                                 {(role === 'STAFF' || role === 'STUDENT') && (
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Department</label>
+                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="department">Department</label>
                                             <select
+                                                id="department"
                                                 className={cn(inputClass, "bg-muted/50 h-11 border-border")}
                                                 value={form.watch('department')}
                                                 onChange={(e) => form.setValue("department", e.target.value)}
@@ -390,8 +392,9 @@ export default function RegisterPage() {
                                         </div>
                                         {role === 'STUDENT' && (
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Batch</label>
+                                                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="batchYear">Batch</label>
                                                 <select
+                                                    id="batchYear"
                                                     className={cn(inputClass, "bg-muted/50 h-11 border-border")}
                                                     value={form.watch('batchYear')}
                                                     onChange={(e) => form.setValue("batchYear", e.target.value)}
@@ -410,8 +413,9 @@ export default function RegisterPage() {
                                 {role === 'COMPANY' && (
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Company</label>
+                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="companyId">Company</label>
                                             <select
+                                                id="companyId"
                                                 className={cn(inputClass, "bg-muted/50 h-11 border-border")}
                                                 value={form.watch('companyId')}
                                                 onChange={(e) => form.setValue("companyId", e.target.value)}
@@ -421,8 +425,8 @@ export default function RegisterPage() {
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Working Email</label>
-                                            <Input type="email" placeholder="hr@org.com" {...form.register("companyEmail")} className="bg-muted/50 h-11 border-border" />
+                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="companyEmail">Working Email</label>
+                                            <Input id="companyEmail" type="email" placeholder="hr@org.com" {...form.register("companyEmail")} className="bg-muted/50 h-11 border-border" />
                                         </div>
                                     </div>
                                 )}
@@ -430,8 +434,8 @@ export default function RegisterPage() {
                                 {role === 'PARENT' && (
                                     <div className="space-y-4 p-4 rounded-xl bg-muted/30 border border-border/50">
                                         <div className="space-y-2 relative">
-                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Child Name</label>
-                                            <Input placeholder="Type name..." value={studentSearchQuery} onChange={(e) => setStudentSearchQuery(e.target.value)} className="bg-background h-11 border-border" />
+                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="childSearch">Child Name</label>
+                                            <Input id="childSearch" placeholder="Type name..." value={studentSearchQuery} onChange={(e) => setStudentSearchQuery(e.target.value)} className="bg-background h-11 border-border" />
                                             {studentOptions.length > 0 && (
                                                 <div className="absolute z-10 w-full bg-popover border border-border rounded-lg shadow-xl mt-1 max-h-40 overflow-y-auto">
                                                     {studentOptions.map((s: any) => (
@@ -444,8 +448,8 @@ export default function RegisterPage() {
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Child Contact</label>
-                                            <Input {...form.register("studentContact")} placeholder="Phone number" className="bg-background h-11 border-border" />
+                                            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="studentContact">Child Contact</label>
+                                            <Input id="studentContact" {...form.register("studentContact")} placeholder="Phone number" className="bg-background h-11 border-border" />
                                         </div>
                                     </div>
                                 )}
@@ -463,9 +467,9 @@ export default function RegisterPage() {
                                     <p className="text-sm font-medium opacity-90">{form.getValues('email')}</p>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Phone Number <span className="text-destructive">*</span></label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1" htmlFor="phoneNumber">Phone Number <span className="text-destructive">*</span></label>
                                     <div className="flex gap-2">
-                                        <Input type="tel" placeholder="9876543210" maxLength={10} value={form.watch('phoneNumber')} onChange={(e) => form.setValue('phoneNumber', e.target.value.replace(/\D/g, ''))} className="flex-1 h-11 bg-muted/50 border-border" disabled={phoneVerified} />
+                                        <Input id="phoneNumber" type="tel" placeholder="9876543210" maxLength={10} value={form.watch('phoneNumber')} onChange={(e) => form.setValue('phoneNumber', e.target.value.replace(/\D/g, ''))} className="flex-1 h-11 bg-muted/50 border-border" disabled={phoneVerified} />
                                         {!phoneVerified && (
                                             <Button type="button" variant="outline" disabled={phoneOTPLoading || phoneCountdown > 0} onClick={handleSendPhoneOTP} className="h-11 border-border font-bold text-[10px] uppercase px-4 bg-background hover:bg-muted">
                                                 {phoneCountdown > 0 ? `${phoneCountdown}s` : phoneOTPSent ? 'Resend' : 'Send'}
@@ -475,9 +479,9 @@ export default function RegisterPage() {
                                 </div>
                                 {phoneOTPSent && !phoneVerified && (
                                     <div className="space-y-2 pt-2">
-                                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1 text-center block">Verification Code</label>
+                                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1 text-center block" htmlFor="phoneOTPCode">Verification Code</label>
                                         <div className="flex gap-2">
-                                            <Input type="text" placeholder="••••••" maxLength={6} value={phoneOTPCode} onChange={(e) => setPhoneOTPCode(e.target.value.replace(/\D/g, ''))} className="flex-1 h-12 text-center text-xl tracking-[0.5em] font-black bg-muted/50 border-border" />
+                                            <Input id="phoneOTPCode" type="text" placeholder="••••••" maxLength={6} value={phoneOTPCode} onChange={(e) => setPhoneOTPCode(e.target.value.replace(/\D/g, ''))} className="flex-1 h-12 text-center text-xl tracking-[0.5em] font-black bg-muted/50 border-border" />
                                             <Button type="button" disabled={phoneOTPLoading || phoneOTPCode.length !== 6} onClick={handleVerifyPhoneOTP} className="h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6">
                                                 {phoneOTPLoading ? '...' : 'Verify'}
                                             </Button>

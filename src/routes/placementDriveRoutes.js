@@ -8,6 +8,7 @@ router.use(authMiddleware.protect);
 
 // All authenticated users can view drives
 router.get('/', placementDriveController.getAllDrives);
+router.get('/:id', placementDriveController.getDrive);
 
 // Only Admin/Staff can create/update/delete
 router.post('/', authMiddleware.restrictTo('ADMIN', 'STAFF', 'COMPANY'), placementDriveController.createDrive);

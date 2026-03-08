@@ -4,6 +4,7 @@ const Company = require('../models/Company');
 const Notification = require('../models/Notification');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const { logAction } = require('../utils/auditLogger');
 const sanitizeUser = require('../utils/sanitizeUser');
 
 exports.getPendingUsers = catchAsync(async (req, res, next) => {
@@ -90,6 +91,9 @@ exports.approveUser = catchAsync(async (req, res, next) => {
         link: '/dashboard'
     });
 
+    // Audit Logging
+    await logAction(req, 'UPDATE', 'User', user.id, `Approved user: ${user.fullName} (${user.role})`);
+
     const updatedUser = await User.findById(user.id);
     const obj = sanitizeUser(updatedUser);
     obj._id = obj.id;
@@ -137,6 +141,9 @@ exports.rejectUser = catchAsync(async (req, res, next) => {
         message: 'Your registration has been rejected. Please contact the placement cell for more information.',
         link: '/profile'
     });
+
+    // Audit Logging
+    await logAction(req, 'UPDATE', 'User', user.id, `Rejected user: ${user.fullName} (${user.role})`);
 
     const updatedUser = await User.findById(user.id);
     const obj = sanitizeUser(updatedUser);

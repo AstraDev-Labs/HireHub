@@ -99,7 +99,7 @@ export default function CalendarPage() {
     };
 
     const handleCreate = async () => {
-        if (!form.companyId || !form.title || !form.date) { toast.error("Company, title, and date are required"); return; }
+        if ((!isCompany && !form.companyId) || !form.title || !form.date) { toast.error("Company, title, and date are required"); return; }
         try {
             await api.post('/drives', form);
             toast.success("Drive scheduled!");
@@ -312,7 +312,7 @@ export default function CalendarPage() {
                         </div>
                         <div>
                             <label className="text-sm font-medium">Min CGPA</label>
-                            <Input type="number" step="0.1" value={form.minCgpa} onChange={(e) => setForm({ ...form, minCgpa: parseFloat(e.target.value) || 0 })} />
+                            <Input type="number" step="0.1" min={0} max={10} value={form.minCgpa} onChange={(e) => setForm({ ...form, minCgpa: parseFloat(e.target.value) || 0 })} />
                         </div>
                         <div>
                             <label className="text-sm font-medium">Description</label>

@@ -19,14 +19,14 @@ router.get('/my/profile', authMiddleware.restrictTo('COMPANY'), companyControlle
 router.patch('/my/profile', authMiddleware.restrictTo('COMPANY'), companyController.updateCompanyProfile);
 
 // Round Management (Company Staff)
-router.post('/rounds', authMiddleware.restrictTo('COMPANY'), companyController.createRound);
+router.post('/rounds', authMiddleware.restrictTo('COMPANY', 'ADMIN', 'STAFF'), companyController.createRound);
 router.get('/my/rounds', authMiddleware.restrictTo('COMPANY'), companyController.getRounds);
 router.get('/:companyId/rounds', companyController.getRounds);
 router.post('/:id/apply', authMiddleware.restrictTo('STUDENT'), companyController.applyToCompany);
-router.patch('/rounds/:id', authMiddleware.restrictTo('COMPANY'), companyController.updateRound);
-router.delete('/rounds/:id', authMiddleware.restrictTo('COMPANY'), companyController.deleteRound);
-router.post('/rounds/evaluate', authMiddleware.restrictTo('COMPANY'), companyController.evaluateCandidates);
-router.get('/rounds/:roundId/students', authMiddleware.restrictTo('COMPANY'), companyController.getRoundStudents);
-router.post('/announce', authMiddleware.restrictTo('COMPANY'), companyController.sendAnnouncement);
+router.patch('/rounds/:id', authMiddleware.restrictTo('COMPANY', 'ADMIN', 'STAFF'), companyController.updateRound);
+router.delete('/rounds/:id', authMiddleware.restrictTo('COMPANY', 'ADMIN', 'STAFF'), companyController.deleteRound);
+router.post('/rounds/evaluate', authMiddleware.restrictTo('COMPANY', 'ADMIN', 'STAFF'), companyController.evaluateCandidates);
+router.get('/rounds/:roundId/students', authMiddleware.restrictTo('COMPANY', 'ADMIN', 'STAFF'), companyController.getRoundStudents);
+router.post('/announce', authMiddleware.restrictTo('COMPANY', 'ADMIN', 'STAFF'), companyController.sendAnnouncement);
 
 module.exports = router;
