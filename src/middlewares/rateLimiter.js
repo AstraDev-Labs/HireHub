@@ -1,36 +1,42 @@
 const rateLimit = require('express-rate-limit');
 
-// Global API limiter: Adjusted for high throughput stress testing
+const LOCAL_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+function shouldSkipRateLimit(req) {
+    return process.env.SKIP_RATE_LIMIT_FOR_LOCALHOST === 'true' && LOCAL_IPS.has(req.ip);
+}
+
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10000, // Raised from 100 to handle ab stress tests (5000+ requests)
+    max: 10000,
+    skip: shouldSkipRateLimit,
     message: {
         status: 'fail',
-        message: 'Too many requests from this IP. Please try again after 15 minutes.'
+        message: 'Too many requests from this IP. Please try again after 15 minutes.',
     },
     standardHeaders: true,
     legacyHeaders: false,
 });
 
-// Auth limiter: 50 login attempts per 15 minutes per IP
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 50,
+    skip: shouldSkipRateLimit,
     message: {
         status: 'fail',
-        message: 'Too many login attempts. Please try again after 15 minutes.'
+        message: 'Too many login attempts. Please try again after 15 minutes.',
     },
     standardHeaders: true,
     legacyHeaders: false,
 });
 
-// Upload limiter: 20 uploads per 15 minutes per IP
 const uploadLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 20,
+    skip: shouldSkipRateLimit,
     message: {
         status: 'fail',
-        message: 'Too many uploads. Please try again later.'
+        message: 'Too many uploads. Please try again later.',
     },
     standardHeaders: true,
     legacyHeaders: false,

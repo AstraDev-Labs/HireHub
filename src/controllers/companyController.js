@@ -4,11 +4,20 @@ const User = require('../models/User');
 const StudentPlacementStatus = require('../models/StudentPlacementStatus');
 const Student = require('../models/Student');
 const Message = require('../models/Message');
-const Notification = require('../models/Notification');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const { getOrSetCached, clearCachedValue, clearCacheByPrefix } = require('../utils/asyncCache');
 
-// --- Company Management ---
+function invalidateCompanyCache(companyId) {
+    clearCachedValue('companies:all');
+    clearCacheByPrefix('dashboard:admin:stats');
+
+    if (companyId) {
+        clearCachedValue(`companies:${companyId}`);
+        clearCachedValue(`companies:${companyId}:rounds`);
+        clearCachedValue(`dashboard:company:${companyId}`);
+    }
+}
 
 exports.createCompany = catchAsync(async (req, res, next) => {
     if (req.body.jobRoles && !Array.isArray(req.body.jobRoles)) {
@@ -26,20 +35,25 @@ exports.createCompany = catchAsync(async (req, res, next) => {
     }
 
     const newCompany = await Company.create(req.body);
+    invalidateCompanyCache(newCompany.id);
+
     const obj = typeof newCompany.toJSON === 'function' ? newCompany.toJSON() : { ...newCompany };
     obj._id = obj.id;
 
     res.status(201).json({ status: 'success', data: { company: obj } });
 });
 
-exports.getAllCompanies = catchAsync(async (req, res, next) => {
-    const companies = await Company.findAll();
-    const result = companies.map(c => {
-        const obj = typeof c.toJSON === 'function' ? c.toJSON() : { ...c };
-        obj._id = obj.id;
-        return obj;
+exports.getAllCompanies = catchAsync(async (req, res) => {
+    const result = await getOrSetCached('companies:all', 60000, async () => {
+        const companies = await Company.findAll();
+        return companies.map((company) => {
+            const obj = typeof company.toJSON === 'function' ? company.toJSON() : { ...company };
+            obj._id = obj.id;
+            return obj;
+        });
     });
 
+    res.set('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
     res.status(200).json({ status: 'success', results: result.length, data: { companies: result } });
 });
 
@@ -55,6 +69,8 @@ exports.updateCompany = catchAsync(async (req, res, next) => {
     if (!existing) return next(new AppError('No company found with that ID', 404));
 
     await Company.update({ id: req.params.id }, req.body);
+    invalidateCompanyCache(req.params.id);
+
     const company = await Company.findById(req.params.id);
     const obj = typeof company.toJSON === 'function' ? company.toJSON() : { ...company };
     obj._id = obj.id;
@@ -63,19 +79,20 @@ exports.updateCompany = catchAsync(async (req, res, next) => {
 });
 
 exports.getCompany = catchAsync(async (req, res, next) => {
-    const company = await Company.findById(req.params.id);
+    const company = await getOrSetCached(`companies:${req.params.id}`, 60000, async () => Company.findById(req.params.id));
     if (!company) return next(new AppError('No company found with that ID', 404));
 
     const obj = typeof company.toJSON === 'function' ? company.toJSON() : { ...company };
     obj._id = obj.id;
 
+    res.set('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
     res.status(200).json({ status: 'success', data: { company: obj } });
 });
 
 exports.getMyCompany = catchAsync(async (req, res, next) => {
     if (!req.user.companyId) return next(new AppError('You are not linked to any company.', 400));
 
-    const company = await Company.findById(req.user.companyId);
+    const company = await getOrSetCached(`companies:${req.user.companyId}`, 30000, async () => Company.findById(req.user.companyId));
     const obj = typeof company.toJSON === 'function' ? company.toJSON() : { ...company };
     obj._id = obj.id;
 
@@ -91,14 +108,14 @@ exports.updateCompanyProfile = catchAsync(async (req, res, next) => {
     }
 
     await Company.update({ id: req.user.companyId }, req.body);
+    invalidateCompanyCache(req.user.companyId);
+
     const updatedCompany = await Company.findById(req.user.companyId);
     const obj = typeof updatedCompany.toJSON === 'function' ? updatedCompany.toJSON() : { ...updatedCompany };
     obj._id = obj.id;
 
     res.status(200).json({ status: 'success', data: { company: obj } });
 });
-
-// --- Round Management ---
 
 exports.createRound = catchAsync(async (req, res, next) => {
     let companyId = req.user.companyId;
@@ -110,6 +127,8 @@ exports.createRound = catchAsync(async (req, res, next) => {
     if (!companyId) return next(new AppError('Company ID required to create a round.', 400));
 
     const newRound = await Round.create({ ...req.body, companyId });
+    invalidateCompanyCache(companyId);
+
     const obj = typeof newRound.toJSON === 'function' ? newRound.toJSON() : { ...newRound };
     obj._id = obj.id;
 
@@ -120,12 +139,18 @@ exports.getRounds = catchAsync(async (req, res, next) => {
     const companyId = req.params.companyId || req.user.companyId;
     if (!companyId) return next(new AppError('Company ID required to fetch rounds.', 400));
 
-    const rounds = await Round.findByCompanyId(companyId);
-    const result = rounds.map(r => {
-        const obj = typeof r.toJSON === 'function' ? r.toJSON() : { ...r };
-        obj._id = obj.id;
-        return obj;
+    const result = await getOrSetCached(`companies:${companyId}:rounds`, 30000, async () => {
+        const rounds = await Round.findByCompanyId(companyId);
+        return rounds.map((round) => {
+            const obj = typeof round.toJSON === 'function' ? round.toJSON() : { ...round };
+            obj._id = obj.id;
+            return obj;
+        });
     });
+
+    if (req.params.companyId) {
+        res.set('Cache-Control', 'public, max-age=15, s-maxage=30, stale-while-revalidate=60');
+    }
 
     res.status(200).json({ status: 'success', results: result.length, data: { rounds: result } });
 });
@@ -134,12 +159,13 @@ exports.updateRound = catchAsync(async (req, res, next) => {
     const round = await Round.findById(req.params.id);
     if (!round) return next(new AppError('No round found with that ID', 404));
 
-    // Permission check: Own company OR Staff/Admin
     if (round.companyId !== req.user.companyId && req.user.role !== 'ADMIN' && req.user.role !== 'STAFF') {
         return next(new AppError('You do not have permission to update this round', 403));
     }
 
     await Round.update({ id: req.params.id }, req.body);
+    invalidateCompanyCache(round.companyId);
+
     const updated = await Round.findById(req.params.id);
     const obj = typeof updated.toJSON === 'function' ? updated.toJSON() : { ...updated };
     obj._id = obj.id;
@@ -156,6 +182,8 @@ exports.deleteRound = catchAsync(async (req, res, next) => {
     }
 
     await Round.delete({ id: req.params.id });
+    invalidateCompanyCache(round.companyId);
+
     res.status(204).json({ status: 'success', data: null });
 });
 
@@ -173,9 +201,7 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
         return next(new AppError('Permission denied for this evaluation', 403));
     }
 
-    const companyId = round.companyId;
-    const company = await Company.findById(companyId);
-    const sendEmail = require('../utils/sendEmail');
+    const company = await Company.findById(round.companyId);
     const results = [];
 
     await Promise.all(studentIds.map(async (studentId) => {
@@ -192,7 +218,6 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
             const nextRound = await Round.findById(nextRoundId);
             if (!nextRound) return;
 
-            // Update/Create entries
             const existing = await StudentPlacementStatus.findOne({ studentId: studentDoc.id, roundId, companyId: req.user.companyId });
             if (existing) {
                 await StudentPlacementStatus.update({ id: existing.id }, { status: 'CLEARED' });
@@ -201,12 +226,11 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
                 studentId: studentDoc.id,
                 companyId: req.user.companyId,
                 roundId: nextRoundId,
-                status: 'PENDING'
+                status: 'PENDING',
             });
 
             emailSubject = `Congratulations! You have been promoted to ${nextRound.roundType}`;
             emailMessage = `Dear ${studentUser.fullName},\n\nYou have successfully cleared ${round.roundType} and are promoted to ${nextRound.roundType}.\n\nCheck your dashboard for details.\n\nBest,\n${company.name}`;
-
         } else if (action === 'REJECT') {
             const existing = await StudentPlacementStatus.findOne({ studentId: studentDoc.id, roundId, companyId: req.user.companyId });
             if (existing) {
@@ -214,7 +238,6 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
             }
             emailSubject = `Update on your application at ${company.name}`;
             emailMessage = `Dear ${studentUser.fullName},\n\nThank you for your interest in ${company.name}. We regret to inform you that you have not cleared ${round.roundType}.\n\nWe wish you the best for your future endeavors.\n\nBest,\n${company.name}`;
-
         } else if (action === 'OFFER') {
             const existing = await StudentPlacementStatus.findOne({ studentId: studentDoc.id, roundId, companyId: req.user.companyId });
             if (existing) {
@@ -225,7 +248,6 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
             emailMessage = `Dear ${studentUser.fullName},\n\nWe are thrilled to offer you the position at ${company.name}!\n\nYou have successfully cleared all rounds.\n\nBest,\n${company.name} HR Team`;
         }
 
-        // Send internal message
         try {
             await Message.create({
                 senderId: req.user._id,
@@ -234,27 +256,27 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
                 receiverId: studentUser.id,
                 subject: emailSubject,
                 content: emailMessage,
-                type: 'SYSTEM'
+                type: 'SYSTEM',
             });
 
             const parentUsers = await User.findAll({ role: 'PARENT', linkedStudentId: studentDoc.id });
-            await Promise.all(parentUsers.map(parentUser =>
-                Message.create({
-                    senderId: req.user._id,
-                    senderName: company.name,
-                    senderRole: 'COMPANY',
-                    receiverId: parentUser.id,
-                    subject: emailSubject,
-                    content: `Update regarding your child ${studentUser.fullName}:\n\n` + emailMessage,
-                    type: 'SYSTEM'
-                })
-            ));
-        } catch (err) {
+            await Promise.all(parentUsers.map((parentUser) => Message.create({
+                senderId: req.user._id,
+                senderName: company.name,
+                senderRole: 'COMPANY',
+                receiverId: parentUser.id,
+                subject: emailSubject,
+                content: `Update regarding your child ${studentUser.fullName}:\n\n${emailMessage}`,
+                type: 'SYSTEM',
+            })));
+        } catch (error) {
             console.error(`Failed to send message to ${studentUser.email}`);
         }
+
         results.push(studentId);
     }));
 
+    invalidateCompanyCache(round.companyId);
     res.status(200).json({ status: 'success', processed: results.length, message: `Successfully processed ${results.length} students.` });
 });
 
@@ -269,15 +291,15 @@ exports.getRoundStudents = catchAsync(async (req, res, next) => {
     let placements = await StudentPlacementStatus.findByFilter({ roundId, companyId: req.user.companyId });
 
     if (req.user.role === 'COMPANY') {
-        placements = placements.filter(p => p.status !== 'PENDING_APPROVAL');
+        placements = placements.filter((placement) => placement.status !== 'PENDING_APPROVAL');
     }
 
-    const studentIds = placements.map(p => p.studentId);
-    const studentsRes = await Promise.all(studentIds.map(sid => Student.findById(sid)));
-    const students = studentsRes.filter(s => s !== null);
+    const studentIds = placements.map((placement) => placement.studentId);
+    const studentsRes = await Promise.all(studentIds.map((studentId) => Student.findById(studentId)));
+    const students = studentsRes.filter((student) => student !== null);
 
-    const results = students.map(student => {
-        const status = placements.find(p => p.studentId === student.id);
+    const results = students.map((student) => {
+        const status = placements.find((placement) => placement.studentId === student.id);
         return {
             _id: student.id,
             userId: student.userId,
@@ -286,7 +308,7 @@ exports.getRoundStudents = catchAsync(async (req, res, next) => {
             department: student.department,
             cgpa: student.cgpa,
             placementStatus: status.status,
-            placementId: status.id
+            placementId: status.id,
         };
     });
 
@@ -306,41 +328,35 @@ exports.sendAnnouncement = catchAsync(async (req, res, next) => {
     if (roundId) filter.roundId = roundId;
 
     const placements = await StudentPlacementStatus.findByFilter(filter);
-    // Only send to students whose application has been approved (not PENDING_APPROVAL)
-    const approvedPlacements = placements.filter(p => p.status !== 'PENDING_APPROVAL');
-    const uniqueStudentIds = [...new Set(approvedPlacements.map(p => p.studentId))];
+    const approvedPlacements = placements.filter((placement) => placement.status !== 'PENDING_APPROVAL');
+    const uniqueStudentIds = [...new Set(approvedPlacements.map((placement) => placement.studentId))];
 
-    // studentId is a Student model ID, look up the Student first then get the User
-    const studentRecords = await Promise.all(uniqueStudentIds.map(sid => Student.findById(sid)));
-    const validStudents = studentRecords.filter(s => s !== null);
-    const studentUsers = await Promise.all(validStudents.map(s => User.findById(s.userId)));
-    const students = studentUsers.filter(user => user !== null);
+    const studentRecords = await Promise.all(uniqueStudentIds.map((studentId) => Student.findById(studentId)));
+    const validStudents = studentRecords.filter((student) => student !== null);
+    const studentUsers = await Promise.all(validStudents.map((student) => User.findById(student.userId)));
+    const students = studentUsers.filter((user) => user !== null);
 
     if (students.length === 0) {
         return res.status(200).json({ status: 'success', message: 'No students found to notify.' });
     }
 
-    const promises = students.map(student =>
-        Message.create({
-            senderId: req.user._id,
-            senderName: company.name,
-            senderRole: 'COMPANY',
-            receiverId: student.id,
-            subject: `[${company.name}] ${subject}`,
-            content: message,
-            type: 'DIRECT'
-        })
-    );
+    await Promise.all(students.map((student) => Message.create({
+        senderId: req.user._id,
+        senderName: company.name,
+        senderRole: 'COMPANY',
+        receiverId: student.id,
+        subject: `[${company.name}] ${subject}`,
+        content: message,
+        type: 'DIRECT',
+    })));
 
-    await Promise.all(promises);
-
+    invalidateCompanyCache(companyId);
     res.status(200).json({ status: 'success', message: `Announcement sent to ${students.length} students.` });
 });
 
 exports.applyToCompany = catchAsync(async (req, res, next) => {
     const companyId = req.params.id;
 
-    // Check if student's registration has been approved
     if (req.user.approvalStatus !== 'APPROVED') {
         return next(new AppError('Your registration has not been approved yet. Please wait for Admin/Staff approval before applying to companies.', 403));
     }
@@ -359,7 +375,6 @@ exports.applyToCompany = catchAsync(async (req, res, next) => {
 
     const rounds = await Round.findByCompanyId(companyId);
     if (rounds.length === 0) return next(new AppError('No selection rounds defined for this company yet.', 400));
-    const firstRound = rounds[0];
 
     const existingApplication = await StudentPlacementStatus.findOne({ studentId: student.id, companyId });
     if (existingApplication) return next(new AppError('You have already applied to this company.', 400));
@@ -367,9 +382,11 @@ exports.applyToCompany = catchAsync(async (req, res, next) => {
     await StudentPlacementStatus.create({
         studentId: student.id,
         companyId,
-        roundId: firstRound.id,
-        status: 'PENDING_APPROVAL'
+        roundId: rounds[0].id,
+        status: 'PENDING_APPROVAL',
     });
 
+    invalidateCompanyCache(companyId);
+    clearCachedValue(`dashboard:student:${req.user._id}`);
     res.status(201).json({ status: 'success', message: 'Application submitted successfully!' });
 });

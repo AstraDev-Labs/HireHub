@@ -3,25 +3,20 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Load env vars
 dotenv.config();
 
-// Validate environment variables at startup
 const validateEnv = require('./utils/validateEnv');
 validateEnv();
 
-// Sanitize FRONTEND_URL to extract ONLY the base origin (prevents CORS mismatches if user pastes a path like /login)
 if (process.env.FRONTEND_URL) {
     try {
         const parsedUrl = new URL(process.env.FRONTEND_URL);
         process.env.FRONTEND_URL = parsedUrl.origin;
-    } catch (e) {
-        // Fallback if it's not a valid URL (e.g. localhost:3000)
+    } catch (error) {
         process.env.FRONTEND_URL = process.env.FRONTEND_URL.replace(/\/$/, '');
     }
 }
 
-// Initialize DynamoDB connection (replaces MongoDB)
 require('./config/dynamodb');
 
 const morgan = require('morgan');
@@ -30,17 +25,14 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const hpp = require('hpp');
 
-// Security Middleware
 const { globalLimiter, authLimiter, uploadLimiter } = require('./middlewares/rateLimiter');
 const sanitize = require('./middlewares/sanitize');
 const { setCSRFToken, validateCSRF } = require('./middlewares/csrfProtection');
 
-// Error Handling
 const AppError = require('./utils/AppError');
 const globalErrorHandler = require('./middlewares/errorMiddleware');
 const loggerMiddleware = require('./middlewares/loggerMiddleware');
 
-// Route Imports
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require('./routes/studentRoutes');
@@ -59,75 +51,58 @@ const interviewRoutes = require('./routes/interviewRoutes');
 const challengeRoutes = require('./routes/challengeRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
-// Start Express App
 const app = express();
-
-// Trust proxy for rate limiting (important for Render/Vercel)
+app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
-// ══════════════════════════════════════════════════
-// 1) SECURITY MIDDLEWARE
-// ══════════════════════════════════════════════════
+app.get('/api/healthz', (req, res) => {
+    res.status(200).json({ status: 'success', uptime: process.uptime() });
+});
 
-// Helmet — hardened security headers
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            imgSrc: ["'self'", "data:", "https:", "blob:"],
-            connectSrc: ["'self'", process.env.FRONTEND_URL, "https://*.amazonaws.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+            imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+            connectSrc: ["'self'", process.env.FRONTEND_URL, 'https://*.amazonaws.com'],
             frameSrc: ["'none'"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
         },
     },
-    crossOriginEmbedderPolicy: false, // Allow S3 images
+    crossOriginEmbedderPolicy: false,
     hsts: {
-        maxAge: 31536000, // 1 year
+        maxAge: 31536000,
         includeSubDomains: true,
         preload: true,
     },
 }));
 
-// CORS — strict origin control
 app.use(cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
-    exposedHeaders: ['X-CSRF-Token'], // Allow frontend to read CSRF token from headers
+    exposedHeaders: ['X-CSRF-Token'],
 }));
 
-// Rate Limiting — global
 app.use('/api', globalLimiter);
-
-// Body parsing with size limits
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
-
-// Input sanitization — XSS + injection prevention
 app.use(sanitize);
-
-// HTTP Parameter Pollution protection
 app.use(hpp());
-
-// CSRF Protection (Double Submit Cookie)
 app.use(setCSRFToken);
 app.use('/api', validateCSRF);
 
-// Logging
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
 app.use(loggerMiddleware);
 
-// ══════════════════════════════════════════════════
-// 2) ROUTES (with targeted rate limiters)
-// ══════════════════════════════════════════════════
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
@@ -146,44 +121,41 @@ app.use('/api/interviews', interviewRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/admin', adminRoutes);
 
-// High-performance health check route for load testing / root API pinging
 app.get('/api', (req, res) => {
     res.status(200).json({ status: 'success', message: 'HireHub API is running smoothly' });
 });
 
-// Static folder for file uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Handle Unhandled Routes
 app.use((req, res, next) => {
     next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
-// Global Error Handler
 app.use(globalErrorHandler);
 
-// ══════════════════════════════════════════════════
-// 3) SERVER START
-// ══════════════════════════════════════════════════
 if (!process.env.LAMBDA_TASK_ROOT) {
     const PORT = process.env.PORT || 5000;
     const server = app.listen(PORT, () => {
         console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-        console.log(`🔒 Security: Helmet, Rate Limiting, Sanitization, HPP — ACTIVE`);
+        console.log('🔒 Security: Helmet, Rate Limiting, Sanitization, HPP — ACTIVE');
     });
 
-    process.on('uncaughtException', err => {
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
+    server.requestTimeout = 15000;
+
+    process.on('uncaughtException', (error) => {
         console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
-        console.log(err.name, err.message);
-        const log = `${new Date().toISOString()} - UNCAUGHT EXCEPTION: ${err.name} - ${err.message}\n${err.stack}\n\n`;
+        console.log(error.name, error.message);
+        const log = `${new Date().toISOString()} - UNCAUGHT EXCEPTION: ${error.name} - ${error.message}\n${error.stack}\n\n`;
         fs.appendFileSync('crash.log', log);
         process.exit(1);
     });
 
-    process.on('unhandledRejection', err => {
+    process.on('unhandledRejection', (error) => {
         console.log('UNHANDLED REJECTION! 💥 Shutting down...');
-        console.log(err.name, err.message);
-        const log = `${new Date().toISOString()} - UNHANDLED REJECTION: ${err.name} - ${err.message}\n${err.stack}\n\n`;
+        console.log(error.name, error.message);
+        const log = `${new Date().toISOString()} - UNHANDLED REJECTION: ${error.name} - ${error.message}\n${error.stack}\n\n`;
         fs.appendFileSync('crash.log', log);
         server.close(() => {
             process.exit(1);

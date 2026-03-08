@@ -12,3 +12,5 @@ yarn-error.log
 *.js
 !src/**/*.js
 !frontend/**/*.js
+!scripts/load-test.js
+
