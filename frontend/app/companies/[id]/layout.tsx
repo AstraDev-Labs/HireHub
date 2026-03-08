@@ -1,7 +1,5 @@
 import { Metadata, ResolvingMetadata } from 'next';
-import api from '@/lib/api'; // Note: Server components can't use an axios instance with interceptors easily if it relies on localStorage/cookies directly in the config.
 
-// Using standard fetch since this runs on the server before the client loads.
 async function getCompany(id: string) {
     try {
         const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -15,10 +13,11 @@ async function getCompany(id: string) {
 }
 
 export async function generateMetadata(
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
     parent: ResolvingMetadata
 ): Promise<Metadata> {
-    const company = await getCompany(params.id);
+    const { id } = await params;
+    const company = await getCompany(id);
 
     if (!company) {
         return { title: 'Company Not Found' };
@@ -32,21 +31,25 @@ export async function generateMetadata(
         openGraph: {
             title: `Careers at ${company.name} | HireHub`,
             description: `Recruitment drive for ${company.name}. Open roles: ${company.jobRoles.join(', ')}. Package: ${company.packageLpa} LPA.`,
-            images: [...previousImages], // Add specific company logo URL here later if available
+            images: [...previousImages],
         },
     };
 }
 
-export default async function CompanyLayout({ children, params }: { children: React.ReactNode, params: { id: string } }) {
-    const company = await getCompany(params.id);
+export default async function CompanyLayout({
+    children,
+    params,
+}: {
+    children: React.ReactNode;
+    params: Promise<{ id: string }>;
+}) {
+    const { id } = await params;
+    const company = await getCompany(id);
 
     if (!company) {
         return <>{children}</>;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-
-    // Structured Data for the specific company
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'Organization',
@@ -54,29 +57,28 @@ export default async function CompanyLayout({ children, params }: { children: Re
         description: company.description,
         url: company.website,
         email: company.email,
-        sameAs: company.website ? [company.website] : []
+        sameAs: company.website ? [company.website] : [],
     };
 
-    // If hiring is open, we can also add a JobPosting schema overview
     const jobPostingSchema = company.hiringStatus === 'OPEN' ? {
         '@context': 'https://schema.org',
         '@type': 'JobPosting',
         title: `Software Roles at ${company.name}`,
         description: company.description || `Hiring multiple roles including ${company.jobRoles.join(', ')}`,
-        datePosted: new Date().toISOString().split('T')[0], // Approximation unless we track exact date
+        datePosted: new Date().toISOString().split('T')[0],
         validThrough: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
         employmentType: 'FULL_TIME',
         hiringOrganization: {
             '@type': 'Organization',
             name: company.name,
-            sameAs: company.website
+            sameAs: company.website,
         },
         jobLocation: company.location.map((loc: string) => ({
             '@type': 'Place',
             address: {
                 '@type': 'PostalAddress',
                 addressLocality: loc,
-            }
+            },
         })),
         baseSalary: {
             '@type': 'MonetaryAmount',
@@ -84,9 +86,9 @@ export default async function CompanyLayout({ children, params }: { children: Re
             value: {
                 '@type': 'QuantitativeValue',
                 value: company.packageLpa * 100000,
-                unitText: 'YEAR'
-            }
-        }
+                unitText: 'YEAR',
+            },
+        },
     } : null;
 
     return (

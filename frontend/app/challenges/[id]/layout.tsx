@@ -13,10 +13,11 @@ async function getChallenge(id: string) {
 }
 
 export async function generateMetadata(
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
     parent: ResolvingMetadata
 ): Promise<Metadata> {
-    const challenge = await getChallenge(params.id);
+    const { id } = await params;
+    const challenge = await getChallenge(id);
 
     if (!challenge) {
         return { title: 'Challenge Not Found' };
@@ -37,14 +38,20 @@ export async function generateMetadata(
     };
 }
 
-export default async function ChallengeLayout({ children, params }: { children: React.ReactNode, params: { id: string } }) {
-    const challenge = await getChallenge(params.id);
+export default async function ChallengeLayout({
+    children,
+    params,
+}: {
+    children: React.ReactNode;
+    params: Promise<{ id: string }>;
+}) {
+    const { id } = await params;
+    const challenge = await getChallenge(id);
 
     if (!challenge) {
         return <>{children}</>;
     }
 
-    // Structured Data for Educational/Programming problem
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'LearningResource',
@@ -54,8 +61,8 @@ export default async function ChallengeLayout({ children, params }: { children: 
         educationalLevel: challenge.difficulty === 'Hard' ? 'Advanced' : challenge.difficulty === 'Medium' ? 'Intermediate' : 'Beginner',
         about: challenge.topicTags?.map((tag: string) => ({
             '@type': 'Thing',
-            name: tag
-        })) || []
+            name: tag,
+        })) || [],
     };
 
     return (
