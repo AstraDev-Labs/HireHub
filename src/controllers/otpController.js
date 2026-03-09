@@ -73,3 +73,4 @@ exports.verifyPhoneOTP = catchAsync(async (req, res, next) => {
         message: 'Phone number verified successfully!'
     });
 });
+

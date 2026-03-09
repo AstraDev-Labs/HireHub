@@ -7,7 +7,7 @@ const AppError = require('../utils/AppError');
 const { logAction } = require('../utils/auditLogger');
 const sanitizeUser = require('../utils/sanitizeUser');
 
-exports.getPendingUsers = catchAsync(async (req, res, next) => {
+exports.getPendingUsers = catchAsync(async (req, res) => {
     let users = await User.findByApprovalStatus('PENDING');
 
     // Filter out ADMINs
@@ -52,7 +52,7 @@ exports.getPendingUsers = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.approveUser = catchAsync(async (req, res, next) => {
+exports.approveUser = catchAsync(async (req, res) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -104,7 +104,7 @@ exports.approveUser = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.rejectUser = catchAsync(async (req, res, next) => {
+exports.rejectUser = catchAsync(async (req, res) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -155,7 +155,7 @@ exports.rejectUser = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.updatePublicKey = catchAsync(async (req, res, next) => {
+exports.updatePublicKey = catchAsync(async (req, res) => {
     const { publicKey } = req.body;
     if (!publicKey) return next(new AppError('Please provide a public key', 400));
 
@@ -164,7 +164,7 @@ exports.updatePublicKey = catchAsync(async (req, res, next) => {
     res.status(200).json({ status: 'success' });
 });
 
-exports.getUserPublicKey = catchAsync(async (req, res, next) => {
+exports.getUserPublicKey = catchAsync(async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return next(new AppError('User not found', 404));
 
@@ -176,7 +176,7 @@ exports.getUserPublicKey = catchAsync(async (req, res, next) => {
 
 // --- Profile endpoints (all authenticated users) ---
 
-exports.getMe = catchAsync(async (req, res, next) => {
+exports.getMe = catchAsync(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return next(new AppError('User not found', 404));
 
@@ -222,7 +222,7 @@ exports.getMe = catchAsync(async (req, res, next) => {
     res.status(200).json({ status: 'success', data: { user: profile } });
 });
 
-exports.updateMe = catchAsync(async (req, res, next) => {
+exports.updateMe = catchAsync(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return next(new AppError('User not found', 404));
 
@@ -286,7 +286,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 });
 
 // Change Password
-exports.changePassword = catchAsync(async (req, res, next) => {
+exports.changePassword = catchAsync(async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -320,3 +320,5 @@ exports.changePassword = catchAsync(async (req, res, next) => {
 
     res.status(200).json({ status: 'success', message: 'Password changed successfully' });
 });
+
+

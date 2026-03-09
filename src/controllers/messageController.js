@@ -4,7 +4,7 @@ const Student = require('../models/Student');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 
-exports.getMessages = catchAsync(async (req, res, next) => {
+exports.getMessages = catchAsync(async (req, res) => {
     const userId = req.user._id;
     const userRole = req.user.role;
 
@@ -34,7 +34,7 @@ exports.getMessages = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.sendMessage = catchAsync(async (req, res, next) => {
+exports.sendMessage = catchAsync(async (req, res) => {
     const { receiverId, subject, content, type, receiverRole, attachments, isEncrypted } = req.body;
 
     if (!content && (!attachments || attachments.length === 0)) {
@@ -95,7 +95,7 @@ exports.sendMessage = catchAsync(async (req, res, next) => {
     res.status(201).json({ status: 'success', data: { message: obj } });
 });
 
-exports.markAsRead = catchAsync(async (req, res, next) => {
+exports.markAsRead = catchAsync(async (req, res) => {
     const message = await Message.findById(req.params.id);
     if (!message) return next(new AppError('Message not found', 404));
 
@@ -112,7 +112,7 @@ exports.markAsRead = catchAsync(async (req, res, next) => {
     res.status(200).json({ status: 'success', data: { message: obj } });
 });
 
-exports.getContacts = catchAsync(async (req, res, next) => {
+exports.getContacts = catchAsync(async (req, res) => {
     const { query } = req.query;
 
     let users = await User.findAll({ isActive: true, approvalStatus: 'APPROVED' });
@@ -151,7 +151,7 @@ exports.getContacts = catchAsync(async (req, res, next) => {
     res.status(200).json({ status: 'success', results: result.length, data: { users: result } });
 });
 
-exports.markThreadAsRead = catchAsync(async (req, res, next) => {
+exports.markThreadAsRead = catchAsync(async (req, res) => {
     const { otherUserId, subject, type } = req.body;
     const userId = req.user._id;
     const baseSubject = (subject || '').replace(/^Re:\s*/i, '');
@@ -184,8 +184,10 @@ exports.markThreadAsRead = catchAsync(async (req, res, next) => {
     res.status(200).json({ status: 'success' });
 });
 
-exports.getUnreadCount = catchAsync(async (req, res, next) => {
+exports.getUnreadCount = catchAsync(async (req, res) => {
     const count = await Message.countUnread(req.user._id, req.user.role);
 
     res.status(200).json({ status: 'success', data: { count } });
 });
+
+

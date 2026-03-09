@@ -6,7 +6,7 @@ const AppError = require('../utils/AppError');
 
 const auditLogger = require('../utils/auditLogger');
 
-exports.uploadResource = catchAsync(async (req, res, next) => {
+exports.uploadResource = catchAsync(async (req, res) => {
     if (req.user.role === 'COMPANY' && req.body.companyId !== req.user.companyId) {
         return next(new AppError('You can only upload resources for your own company.', 403));
     }
@@ -23,7 +23,7 @@ exports.uploadResource = catchAsync(async (req, res, next) => {
     res.status(201).json({ status: 'success', data: { resource: obj } });
 });
 
-exports.getResources = catchAsync(async (req, res, next) => {
+exports.getResources = catchAsync(async (req, res) => {
     const filter = {};
     if (req.query.companyId) filter.companyId = req.query.companyId;
     if (req.query.roundId) filter.roundId = req.query.roundId;
@@ -53,7 +53,7 @@ exports.getResources = catchAsync(async (req, res, next) => {
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const s3 = require('../config/s3Config');
 
-exports.deleteResource = catchAsync(async (req, res, next) => {
+exports.deleteResource = catchAsync(async (req, res) => {
     const resource = await PrepResource.findById(req.params.id);
     if (!resource) return next(new AppError('No resource found with that ID', 404));
 
@@ -96,3 +96,5 @@ exports.deleteResource = catchAsync(async (req, res, next) => {
     await PrepResource.delete(req.params.id);
     res.status(204).json({ status: 'success', data: null });
 });
+
+

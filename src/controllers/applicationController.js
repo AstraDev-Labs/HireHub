@@ -1,7 +1,6 @@
 const DriveApplication = require('../models/DriveApplication');
 const PlacementDrive = require('../models/PlacementDrive');
 const Student = require('../models/Student');
-const Company = require('../models/Company');
 const Round = require('../models/Round');
 const StudentPlacementStatus = require('../models/StudentPlacementStatus');
 const catchAsync = require('../utils/catchAsync');
@@ -183,3 +182,4 @@ exports.updateApplicationStatus = catchAsync(async (req, res, next) => {
 
     res.status(200).json({ status: 'success', message: `Application marked as ${status}` });
 });
+

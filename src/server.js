@@ -12,7 +12,7 @@ if (process.env.FRONTEND_URL) {
     try {
         const parsedUrl = new URL(process.env.FRONTEND_URL);
         process.env.FRONTEND_URL = parsedUrl.origin;
-    } catch (error) {
+    } catch {
         process.env.FRONTEND_URL = process.env.FRONTEND_URL.replace(/\/$/, '');
     }
 }
@@ -164,3 +164,4 @@ if (!process.env.LAMBDA_TASK_ROOT) {
 }
 
 module.exports = app;
+

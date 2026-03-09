@@ -10,7 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const sendEmail = require('../utils/sendEmail');
 const { logAction } = require('../utils/auditLogger');
 
-exports.createInterviewSlots = catchAsync(async (req, res, next) => {
+exports.createInterviewSlots = catchAsync(async (req, res) => {
     // Companies can create slots
     const { driveId, roundId, slots } = req.body;
     // slots should be array of { studentId, scheduledAt, durationMinutes, meetLink }
@@ -113,7 +113,7 @@ exports.createInterviewSlots = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.getCompanyInterviews = catchAsync(async (req, res, next) => {
+exports.getCompanyInterviews = catchAsync(async (req, res) => {
     let companyId = req.user.companyId;
 
     if (!companyId && (req.user.role === 'ADMIN' || req.user.role === 'STAFF')) {
@@ -136,7 +136,7 @@ exports.getCompanyInterviews = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.getStudentInterviews = catchAsync(async (req, res, next) => {
+exports.getStudentInterviews = catchAsync(async (req, res) => {
     const student = await Student.findByUserId(req.user._id);
     if (!student) return next(new AppError('Student profile not found.', 404));
 
@@ -153,7 +153,7 @@ exports.getStudentInterviews = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.getAllInterviews = catchAsync(async (req, res, next) => {
+exports.getAllInterviews = catchAsync(async (req, res) => {
     // Only Admin/Staff can use this
     const interviews = await InterviewSlot.scan().exec();
 
@@ -168,7 +168,7 @@ exports.getAllInterviews = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.updateInterviewStatus = catchAsync(async (req, res, next) => {
+exports.updateInterviewStatus = catchAsync(async (req, res) => {
     const { id } = req.params;
     const { status, feedback } = req.body;
 
@@ -198,7 +198,7 @@ exports.updateInterviewStatus = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.deleteInterview = catchAsync(async (req, res, next) => {
+exports.deleteInterview = catchAsync(async (req, res) => {
     const { id } = req.params;
     const interview = await InterviewSlot.findById(id);
 
@@ -220,3 +220,5 @@ exports.deleteInterview = catchAsync(async (req, res, next) => {
         message: 'Interview slot deleted'
     });
 });
+
+

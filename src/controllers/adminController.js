@@ -1,7 +1,7 @@
 const AuditLog = require('../models/AuditLog');
 const catchAsync = require('../utils/catchAsync');
 
-exports.getAuditLogs = catchAsync(async (req, res, next) => {
+exports.getAuditLogs = catchAsync(async (req, res) => {
     // Only ADMINs should access all logs
     // Filter can include actorRole, action, resource
     const logs = await AuditLog.findAll(req.query);
@@ -15,3 +15,5 @@ exports.getAuditLogs = catchAsync(async (req, res, next) => {
         data: { logs }
     });
 });
+
+
