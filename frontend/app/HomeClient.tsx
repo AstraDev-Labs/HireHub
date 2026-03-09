@@ -2,24 +2,22 @@
 
 /* UX: label placeholder aria-label */
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { GraduationCap, ArrowRight, CheckCircle, Users, Building2, Briefcase } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 export default function HomeClient() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (!loading && user) {
       router.push('/dashboard');
-    } else {
-      setLoading(false);
     }
-  }, [router]);
+  }, [loading, router, user]);
 
   if (loading) {
     return (
