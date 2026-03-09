@@ -460,7 +460,7 @@ export default function ChallengeDetailPage() {
                                 </div>
                             ) : (
                                 <div className="p-8 space-y-6 animate-in slide-in-from-top-4 duration-500">
-                                    <div className="flex items-center justify-between p-4 bg-muted/40 rounded-2xl border border-border">
+                                    <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-600 bg-slate-800 text-slate-50 shadow-lg shadow-black/30">
                                         <div className="flex items-center gap-4">
                                             {result.result === 'Accepted' ? (
                                                 <div className="p-2 bg-green-500/20 rounded-full">
@@ -546,4 +546,5 @@ export default function ChallengeDetailPage() {
         </div>
     );
 }
+
 
