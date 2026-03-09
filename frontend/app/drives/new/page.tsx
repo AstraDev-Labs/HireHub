@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CalendarDays, Building2, MapPin, UploadCloud, Users, GraduationCap, Clock, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 
 export default function NewDrivePage() {
     const { user } = useAuth();
@@ -82,10 +82,32 @@ export default function NewDrivePage() {
         setLoading(true);
         try {
             const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data);
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(data);
+            const worksheet = workbook.getWorksheet(1);
+            
+            if (!worksheet) {
+                toast.error('The Excel file is empty.');
+                setLoading(false);
+                return;
+            }
+
+            const json: any[] = [];
+            const headerRow = worksheet.getRow(1);
+            const headers: string[] = [];
+            headerRow.eachCell((cell: any, colNumber: number) => {
+                headers[colNumber] = cell.value?.toString() || '';
+            });
+
+            worksheet.eachRow((row: any, rowNumber: number) => {
+                if (rowNumber === 1) return; // Skip headers
+                const rowData: any = {};
+                row.eachCell((cell: any, colNumber: number) => {
+                    const header = headers[colNumber];
+                    if (header) rowData[header] = cell.value;
+                });
+                json.push(rowData);
+            });
 
             if (json.length === 0) {
                 toast.error('The Excel file is empty.');
