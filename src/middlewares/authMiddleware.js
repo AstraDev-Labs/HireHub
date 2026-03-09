@@ -22,7 +22,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     let decoded;
     try {
         decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
+    } catch {
         return next(new AppError('Invalid token. Please log in again!', 401));
     }
 
@@ -45,3 +45,4 @@ exports.restrictTo = (...roles) => {
         next();
     };
 };
+

@@ -3,14 +3,13 @@ const AppError = require('../utils/AppError');
 const StudentPlacementStatus = require('../models/StudentPlacementStatus');
 const Student = require('../models/Student');
 const User = require('../models/User');
-const sendEmail = require('../utils/sendEmail');
 const Company = require('../models/Company');
 const Round = require('../models/Round');
 const Message = require('../models/Message');
 
 // --- Application Approval ---
 
-exports.getAllApplications = catchAsync(async (req, res, next) => {
+exports.getAllApplications = catchAsync(async (req, res) => {
     try {
         const filter = {};
         if (req.query.status) filter.status = req.query.status;
@@ -48,7 +47,7 @@ exports.getAllApplications = catchAsync(async (req, res, next) => {
     }
 });
 
-exports.approveApplication = catchAsync(async (req, res, next) => {
+exports.approveApplication = catchAsync(async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
@@ -69,7 +68,7 @@ exports.approveApplication = catchAsync(async (req, res, next) => {
 
 // --- Legacy Placement Logic ---
 
-exports.updatePlacementStatus = catchAsync(async (req, res, next) => {
+exports.updatePlacementStatus = catchAsync(async (req, res) => {
     const { studentId, companyId, roundId, status } = req.body;
 
     let placement = await StudentPlacementStatus.findOne({ studentId, companyId, roundId });
@@ -120,7 +119,7 @@ exports.updatePlacementStatus = catchAsync(async (req, res, next) => {
     res.status(200).json({ status: 'success', data: { placement: obj } });
 });
 
-exports.getStudentPlacementStatus = catchAsync(async (req, res, next) => {
+exports.getStudentPlacementStatus = catchAsync(async (req, res) => {
     const studentId = req.params.studentId;
 
     if (req.user.role === 'STUDENT') {
@@ -149,3 +148,5 @@ exports.getStudentPlacementStatus = catchAsync(async (req, res, next) => {
 
     res.status(200).json({ status: 'success', results: result.length, data: { statuses: result } });
 });
+
+

@@ -13,7 +13,7 @@ if (cluster.isPrimary) {
         cluster.fork();
     }
 
-    cluster.on('exit', (worker, code, signal) => {
+    cluster.on('exit', (worker) => {
         console.log(`⚠️  Worker ${worker.process.pid} died. Restarting...`);
         cluster.fork();
     });
@@ -22,3 +22,4 @@ if (cluster.isPrimary) {
     require(path.join(__dirname, 'server.js'));
     console.log(`🚀 Worker ${process.pid} started`);
 }
+

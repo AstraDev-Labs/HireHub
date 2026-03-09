@@ -269,7 +269,7 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
                 content: `Update regarding your child ${studentUser.fullName}:\n\n${emailMessage}`,
                 type: 'SYSTEM',
             })));
-        } catch (error) {
+        } catch {
             console.error(`Failed to send message to ${studentUser.email}`);
         }
 
@@ -390,3 +390,5 @@ exports.applyToCompany = catchAsync(async (req, res, next) => {
     clearCachedValue(`dashboard:student:${req.user._id}`);
     res.status(201).json({ status: 'success', message: 'Application submitted successfully!' });
 });
+
+
