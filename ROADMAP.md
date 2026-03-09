@@ -14,6 +14,16 @@ This document outlines the planned trajectory for HireHub, identifying future fe
 
 ---
 
+## 🛡️ [v1.2.0] - The "Zero Trust" Update
+**Focus:** Enterprise-grade security and secret management.
+### Planned Features:
+- **HashiCorp Vault Integration:** Transition from static `.env` files to dynamic, identity-based secret management for DB and AWS credentials.
+- **Enhanced Encryption at Rest:** Implement field-level encryption for sensitive student data in DynamoDB using Vault's transit engine.
+- **Advanced Audit Logging:** Secure, tamper-proof audit trails for all administrative actions.
+- **GitHub Security Policy:** Formalized vulnerability reporting and security lifecycle management.
+
+---
+
 ## 📱 [v1.5.0] - The "Mobile Access" Update
 **Focus:** Extending the platform accessibility beyond the mobile web interface.
 ### Planned Features:

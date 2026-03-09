@@ -1,0 +1,7 @@
+# CODEOWNERS for HireHub
+# These users will be automatically requested for reviews when a Pull Request is opened.
+
+*       @hirehubedu
+/frontend/ @hirehubedu
+/src/ @hirehubedu
+.github/ @hirehubedu
