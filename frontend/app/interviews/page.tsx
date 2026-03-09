@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import { CalendarDays, Clock, Video, User, Building2, CheckCircle, XCircle, FileSpreadsheet, Trash2, Search } from 'lucide-react';
-import * as ExcelJS from 'exceljs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -13,6 +12,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+
+function isSafeHttpUrl(rawUrl?: string | null): string | null {
+    if (!rawUrl) return null;
+    try {
+        const url = new URL(rawUrl);
+        return url.protocol === 'http:' || url.protocol === 'https:' ? rawUrl : null;
+    } catch {
+        return null;
+    }
+}
 
 export default function InterviewsPage() {
     const { user } = useAuth();
@@ -159,6 +168,7 @@ export default function InterviewsPage() {
         setLoading(true);
         try {
             const data = await file.arrayBuffer();
+            const ExcelJS = await import('exceljs');
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(data);
             const worksheet = workbook.getWorksheet(1);
@@ -372,14 +382,23 @@ export default function InterviewsPage() {
                                             <Clock className="h-4 w-4 text-amber-500" />
                                             <span>{format(new Date(slot.scheduledAt), 'h:mm a')} ({slot.durationMinutes} mins)</span>
                                         </div>
-                                        {slot.meetLink && (
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Video className="h-4 w-4 text-indigo-500" />
-                                                <a href={slot.meetLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
-                                                    Join Meeting
-                                                </a>
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            const safeMeetLink = isSafeHttpUrl(slot.meetLink);
+                                            if (!safeMeetLink) return null;
+                                            return (
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <Video className="h-4 w-4 text-indigo-500" />
+                                                    <a
+                                                        href={safeMeetLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-600 hover:underline break-all"
+                                                    >
+                                                        Join Meeting
+                                                    </a>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
 
                                     {(user?.role === 'ADMIN' || user?.role === 'STAFF' || (isCompany && slot.companyId === user?.companyId)) && (
@@ -500,12 +519,12 @@ export default function InterviewsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="durationMinutes">Duration (mins)</Label>
-                                    <Input id="durationMinutes" type="number" min="5" value={scheduleForm.durationMinutes} onChange={e => setScheduleForm({ ...scheduleForm, durationMinutes: parseInt(e.target.value) || 30 })} />
+                                    <Input id="durationMinutes" type="number" min="5" aria-label="Interview duration in minutes" value={scheduleForm.durationMinutes} onChange={e => setScheduleForm({ ...scheduleForm, durationMinutes: parseInt(e.target.value) || 30 })} />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="meetLink">Meeting Link (Optional)</Label>
-                                <Input id="meetLink" placeholder="https://meet.google.com/..." value={scheduleForm.meetLink} onChange={e => setScheduleForm({ ...scheduleForm, meetLink: e.target.value })} />
+                                <Input id="meetLink" placeholder="https://meet.google.com/..." aria-label="Online meeting link" value={scheduleForm.meetLink} onChange={e => setScheduleForm({ ...scheduleForm, meetLink: e.target.value })} />
                             </div>
                         </div>
                         <DialogFooter>
@@ -520,5 +539,3 @@ export default function InterviewsPage() {
         </div>
     );
 }
-
-// aria-label placeholder
