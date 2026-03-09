@@ -65,7 +65,13 @@ exports.deleteResource = catchAsync(async (req, res, next) => {
     if (resource.driveLink) {
         try {
             const parsedUrl = new URL(resource.driveLink);
-            const isS3 = parsedUrl.hostname.endsWith('amazonaws.com');
+            // Harden S3 hostname check to prevent 'evil-domain.com.amazonaws.com' bypass
+            const bucketName = process.env.AWS_S3_BUCKET_NAME;
+            const isS3 = parsedUrl.hostname === 's3.amazonaws.com' || 
+                         parsedUrl.hostname === `${bucketName}.s3.amazonaws.com` ||
+                         /^s3\.[a-z0-9-]+\.amazonaws\.com$/.test(parsedUrl.hostname) ||
+                         new RegExp(`^${bucketName}\\.s3\\.[a-z0-9-]+\\.amazonaws\\.com$`).test(parsedUrl.hostname);
+            
             const isInternal = parsedUrl.pathname.includes('/attachments/');
 
             if (isS3 && isInternal) {
