@@ -4,6 +4,18 @@ import { MetadataRoute } from 'next';
 interface Company { _id: string; updatedAt?: string; }
 interface Challenge { _id: string; updatedAt?: string; }
 
+interface CompaniesApiResponse {
+    data?: {
+        companies?: Company[];
+    };
+}
+
+interface ChallengesApiResponse {
+    data?: {
+        challenges?: Challenge[];
+    };
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -24,16 +36,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     try {
         // Fetch Public Companies
-        const companiesRes = await fetch(`${backendUrl}/companies/public`, { 
-            next: { revalidate: 3600 },
-            headers: { 'Accept': 'application/json' }
-        });
+        let companiesRes: Response | null = null;
+        try {
+            companiesRes = await fetch(`${backendUrl}/companies/public`, { 
+                next: { revalidate: 3600 },
+                headers: { 'Accept': 'application/json' }
+            });
+        } catch (e) {
+            console.error("Network error while fetching public companies:", e);
+        }
         
         let companyRoutes: MetadataRoute.Sitemap = [];
-        if (companiesRes.ok && companiesRes.headers.get('content-type')?.includes('application/json')) {
+        if (companiesRes && companiesRes.ok && companiesRes.headers.get('content-type')?.includes('application/json')) {
             try {
-                const data = await companiesRes.json();
-                const companies: Company[] = data.data?.companies || [];
+                const json: CompaniesApiResponse = await companiesRes.json();
+                const companies: Company[] = json.data?.companies ?? [];
                 companyRoutes = companies.map((company) => ({
                     url: `${baseUrl}/companies/${company._id}`,
                     lastModified: company.updatedAt || new Date().toISOString(),
@@ -41,21 +58,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                     priority: 0.8,
                 }));
             } catch (e) {
-                console.error("Failed to parse companies JSON:", e);
+                console.error(
+                    `Failed to parse companies JSON from ${backendUrl}/companies/public (status: ${companiesRes.status}):`,
+                    e
+                );
             }
         }
 
         // Fetch Public Challenges
-        const challengesRes = await fetch(`${backendUrl}/challenges`, { 
-            next: { revalidate: 3600 },
-            headers: { 'Accept': 'application/json' }
-        });
+        let challengesRes: Response | null = null;
+        try {
+            challengesRes = await fetch(`${backendUrl}/challenges`, { 
+                next: { revalidate: 3600 },
+                headers: { 'Accept': 'application/json' }
+            });
+        } catch (e) {
+            console.error("Network error while fetching challenges:", e);
+        }
         
         let challengeRoutes: MetadataRoute.Sitemap = [];
-        if (challengesRes.ok && challengesRes.headers.get('content-type')?.includes('application/json')) {
+        if (challengesRes && challengesRes.ok && challengesRes.headers.get('content-type')?.includes('application/json')) {
             try {
-                const data = await challengesRes.json();
-                const challenges: Challenge[] = data.data?.challenges || [];
+                const json: ChallengesApiResponse = await challengesRes.json();
+                const challenges: Challenge[] = json.data?.challenges ?? [];
                 challengeRoutes = challenges.map((challenge) => ({
                     url: `${baseUrl}/challenges/${challenge._id}`,
                     lastModified: challenge.updatedAt || new Date().toISOString(),
@@ -63,7 +88,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                     priority: 0.7,
                 }));
             } catch (e) {
-                console.error("Failed to parse challenges JSON:", e);
+                console.error(
+                    `Failed to parse challenges JSON from ${backendUrl}/challenges (status: ${challengesRes.status}):`,
+                    e
+                );
             }
         }
 
@@ -74,3 +102,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         return staticRoutes; 
     }
 }
+
