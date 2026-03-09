@@ -447,9 +447,9 @@ export default function ChallengeDetailPage() {
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="console" className="flex-1 overflow-y-auto p-0 m-0 bg-slate-950/50">
+                        <TabsContent value="console" className="flex-1 overflow-y-auto p-0 m-0 bg-slate-900 text-slate-100">
                             {!result && !submitting ? (
-                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8 opacity-50">
+                                <div className="h-full flex flex-col items-center justify-center text-slate-200 p-8 opacity-80">
                                     <Terminal className="w-12 h-12 mb-4" />
                                     <p className="text-sm font-medium">Run your code to see results here.</p>
                                 </div>
@@ -546,3 +546,4 @@ export default function ChallengeDetailPage() {
         </div>
     );
 }
+
