@@ -1,5 +1,9 @@
 import axios from 'axios';
 
+function isPublicPath(pathname: string): boolean {
+    return pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password');
+}
+
 // Helper to read a cookie value by name
 function getCookie(name: string): string | null {
     if (typeof document === 'undefined') return null;
@@ -73,7 +77,7 @@ api.interceptors.response.use(
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
-                    if (window.location.pathname !== '/login') {
+                    if (!isPublicPath(window.location.pathname)) {
                         window.location.href = '/login';
                     }
                 }
@@ -84,3 +88,5 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+
