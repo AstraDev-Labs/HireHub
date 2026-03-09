@@ -62,20 +62,25 @@ exports.deleteResource = catchAsync(async (req, res, next) => {
     }
 
     // Attempt to delete from S3 if it's an internal upload
-    if (resource.driveLink && resource.driveLink.includes('amazonaws.com') && resource.driveLink.includes('/attachments/')) {
+    if (resource.driveLink) {
         try {
-            const urlParts = resource.driveLink.split('.com/');
-            if (urlParts.length > 1) {
-                const key = urlParts[1];
+            const parsedUrl = new URL(resource.driveLink);
+            const isS3 = parsedUrl.hostname.endsWith('amazonaws.com');
+            const isInternal = parsedUrl.pathname.includes('/attachments/');
+
+            if (isS3 && isInternal) {
+                const key = parsedUrl.pathname.substring(1); // Remove leading slash
                 await s3.send(new DeleteObjectCommand({
                     Bucket: process.env.AWS_S3_BUCKET_NAME,
                     Key: key
                 }));
                 console.log(`🗑️ S3 Object Deleted: ${key}`);
             }
-        } catch (s3Err) {
-            console.error('⚠️ S3 Cleanup Failed:', s3Err.message);
-            // We continue anyway so we don't leave broken DB records
+        } catch (err) {
+            // If it's not a valid URL or S3 deletion fails, we log it and continue
+            if (err.code !== 'ERR_INVALID_URL') {
+                console.error('⚠️ S3 Cleanup Failed:', err.message);
+            }
         }
     }
 

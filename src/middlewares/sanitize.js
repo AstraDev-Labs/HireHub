@@ -1,18 +1,24 @@
-/**
- * Input Sanitization Middleware
- * Prevents XSS and NoSQL-style injection attacks by recursively
- * cleaning request body, query params, and URL params.
- */
+const createDOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
+
+// Configure DOMPurify to be strict
+const PURIFY_CONFIG = {
+    ALLOWED_TAGS: [], // Strip all HTML tags by default
+    ALLOWED_ATTR: [],
+    RETURN_DOM_FRAGMENT: false,
+    RETURN_DOM_IMPORT: false,
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'base'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus']
+};
 
 // Recursively strip dangerous keys and sanitize string values
 function sanitizeValue(val) {
     if (typeof val === 'string') {
-        // Strip HTML tags to prevent XSS
-        return val
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/javascript:/gi, '')
-            .replace(/on\w+=/gi, '');
+        // Use DOMPurify for robust sanitization
+        return DOMPurify.sanitize(val, PURIFY_CONFIG);
     }
     if (Array.isArray(val)) {
         return val.map(sanitizeValue);
