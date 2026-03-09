@@ -41,7 +41,7 @@ module.exports = (err, req, res, _next) => {
         error.message = err.message;
 
         if (error.name === 'Validation_error') error = handleDynamoDBValidationError(error);
-        if (error.code === 'ConditionalCheckFailedException') error = handleDynamoDBConditionalError(error);
+        if (error.code === 'ConditionalCheckFailedException') error = handleDynamoDBConditionalError();
         if (error.name === 'JsonWebToken_error') error = handleJWTError();
         if (error.name === 'TokenExpired_error') error = handleJWTExpiredError();
 
