@@ -3,11 +3,13 @@ import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
+const workspaceRoot = path.resolve(configDir, '..');
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  outputFileTracingRoot: workspaceRoot,
   turbopack: {
-    root: configDir,
+    root: workspaceRoot,
   },
   // Security headers for all frontend routes
   async headers() {
@@ -46,3 +48,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
