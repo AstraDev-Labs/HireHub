@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import api from '@/lib/api';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,11 @@ import { useRouter } from 'next/navigation';
 import { Code2, ChevronRight, Trophy, Zap, CheckCircle2, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
-import { useMemo } from 'react';
+import type { Challenge } from '@/types/challenge';
 
 export default function ChallengesPage() {
     const { user } = useAuth();
-    const [challenges, setChallenges] = useState([]);
+    const [challenges, setChallenges] = useState<Challenge[]>([]);
     const [solvedCount, setSolvedCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -44,7 +44,7 @@ export default function ChallengesPage() {
     };
 
     const filteredChallenges = useMemo(() => {
-        return challenges.filter((challenge: any) => 
+        return challenges.filter((challenge: Challenge) => 
             challenge.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             challenge.difficulty.toLowerCase().includes(searchQuery.toLowerCase()) ||
             challenge.topicTags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -86,7 +86,7 @@ export default function ChallengesPage() {
                         <Card className="bg-primary/5 border-primary/10 px-4 py-2 md:px-6 md:py-3 flex items-center gap-3 w-full sm:w-auto">
                             <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
                             <div>
-                                <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Programs Completed</p>
+                                <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Challenges Completed</p>
                                 <p className="text-lg md:text-xl font-bold">{solvedCount}</p>
                             </div>
                         </Card>
@@ -105,7 +105,7 @@ export default function ChallengesPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-                {filteredChallenges.map((challenge: any) => (
+                {filteredChallenges.map((challenge: Challenge) => (
                     <Card
                         key={challenge.id}
                         className="group relative flex h-full flex-col overflow-hidden border-border cursor-pointer bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5"
