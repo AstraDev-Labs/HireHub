@@ -21,6 +21,61 @@ import {
 } from '@/components/ui/table';
 import { format } from 'date-fns';
 
+// ---------------- Types ----------------
+type CodeSnippet = { language: string; code: string };
+
+type Challenge = {
+    id: string | number;
+    title?: string;
+    description?: string;
+    difficulty?: string;
+    constraints?: string;
+    codeSnippets?: CodeSnippet[];
+    testCases?: Array<{ input: string; output: string; isSample?: boolean }>;
+    [key: string]: unknown;
+};
+
+type ExecutionDetails = {
+    stdout?: string;
+    stderr?: string;
+    compile_output?: string;
+    time?: number;
+    memory?: number;
+    status_code?: string;
+    [key: string]: unknown;
+};
+
+type ChallengeResult = {
+    result?: string;
+    execution: ExecutionDetails;
+    [key: string]: unknown;
+};
+
+type Submission = {
+    id: string | number;
+    studentName?: string;
+    studentEmail?: string;
+    status?: string;
+    language?: string;
+    createdAt?: string;
+    [key: string]: unknown;
+};
+
+type ChallengeSubmission = {
+    id: string;
+    user: { id: string; name?: string | null; email?: string | null };
+    status: string;
+    language: string;
+    code: string;
+    createdAt: string;
+    updatedAt?: string;
+    runtime?: number | null;
+    memory?: number | null;
+    error?: string | null;
+    output?: string | null;
+};
+// ---------------------------------------
+
 const decodeHTMLEntities = (text: string) => {
     if (typeof window === 'undefined') return text;
     const textArea = document.createElement('textarea');
@@ -31,16 +86,16 @@ const decodeHTMLEntities = (text: string) => {
 export default function ChallengeDetailPage() {
     const { id } = useParams();
     const router = useRouter();
-    const [challenge, setChallenge] = useState<any>(null);
+    const [challenge, setChallenge] = useState<Challenge | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [code, setCode] = useState('');
     const [language, setLanguage] = useState('javascript');
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<Challenge | null>(null);
     const [activeTab, setActiveTab] = useState('description');
-    const [submissions, setSubmissions] = useState<any[]>([]);
+    const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-    const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+    const [selectedSubmission, setSelectedSubmission] = useState<Challenge | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     const { user } = useAuth();
@@ -546,3 +601,7 @@ export default function ChallengeDetailPage() {
         </div>
     );
 }
+
+
+
+
