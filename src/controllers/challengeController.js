@@ -178,7 +178,7 @@ exports.submitSolution = async (req, res, next) => {
                 const stdout = program_output || "";
                 const stderr = compiler_error || program_error || "";
 
-                let tcStatus = 'Runtime Error';
+                let tcStatus;
                 if (status === '0') {
                     const expected = (tc.output || "").trim();
                     const actual = stdout.trim();
@@ -281,3 +281,4 @@ exports.getChallengeSubmissions = async (req, res, next) => {
         next(error);
     }
 };
+
