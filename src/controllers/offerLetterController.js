@@ -118,3 +118,4 @@ exports.deleteOffer = catchAsync(async (req, res, next) => {
     await OfferLetter.delete({ id: offer.id });
     res.status(200).json({ status: 'success', message: 'Offer deleted' });
 });
+

@@ -183,3 +183,4 @@ exports.getCompanyDashboard = catchAsync(async (req, res) => {
 
     res.status(200).json({ status: 'success', data });
 });
+

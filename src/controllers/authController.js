@@ -293,7 +293,7 @@ exports.login = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.logout = catchAsync(async (req, res, next) => {
+exports.logout = catchAsync(async (req, res) => {
     // Clear HttpOnly cookies
     res.cookie('jwt', 'loggedout', {
         httpOnly: true,
@@ -336,7 +336,7 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
     let decoded;
     try {
         decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    } catch (err) {
+    } catch {
         return next(new AppError('Invalid or expired refresh token. Please log in again.', 401));
     }
 
@@ -468,3 +468,5 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
         token: accessToken
     });
 });
+
+

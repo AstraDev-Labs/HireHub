@@ -2,7 +2,7 @@ const Student = require('../models/Student');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 
-exports.searchStudents = catchAsync(async (req, res, next) => {
+exports.searchStudents = catchAsync(async (req, res) => {
     const { query } = req.query;
     if (!query) {
         return res.status(200).json({ status: 'success', results: 0, data: { students: [] } });
@@ -22,7 +22,7 @@ exports.searchStudents = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.completeProfile = catchAsync(async (req, res, next) => {
+exports.completeProfile = catchAsync(async (req, res) => {
     const student = await Student.findByUserId(req.user._id);
 
     if (!student) {
@@ -52,7 +52,7 @@ exports.completeProfile = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.getMyProfile = catchAsync(async (req, res, next) => {
+exports.getMyProfile = catchAsync(async (req, res) => {
     let student = await Student.findByUserId(req.user._id);
 
     // If profile doesn't exist, create a skeleton one from User data
@@ -89,7 +89,7 @@ exports.getMyProfile = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.createStudent = catchAsync(async (req, res, next) => {
+exports.createStudent = catchAsync(async (req, res) => {
     const existingStudent = await Student.findByUserId(req.user._id);
     if (existingStudent) {
         return next(new AppError('Student profile already exists for this user', 400));
@@ -106,7 +106,7 @@ exports.createStudent = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.getAllStudents = catchAsync(async (req, res, next) => {
+exports.getAllStudents = catchAsync(async (req, res) => {
     console.log("GET /students called by:", req.user.role, req.user._id);
     const students = await Student.findAll();
 
@@ -131,7 +131,7 @@ exports.getAllStudents = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.getStudent = catchAsync(async (req, res, next) => {
+exports.getStudent = catchAsync(async (req, res) => {
     const student = await Student.findById(req.params.id);
 
     if (!student) {
@@ -154,7 +154,7 @@ exports.getStudent = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.updateStudent = catchAsync(async (req, res, next) => {
+exports.updateStudent = catchAsync(async (req, res) => {
     const existing = await Student.findById(req.params.id);
     if (!existing) {
         return next(new AppError('No student found with that ID', 404));
@@ -186,7 +186,7 @@ exports.updateStudent = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.deleteStudent = catchAsync(async (req, res, next) => {
+exports.deleteStudent = catchAsync(async (req, res) => {
     const student = await Student.findById(req.params.id);
     if (!student) {
         return next(new AppError('No student found with that ID', 404));
@@ -200,7 +200,7 @@ exports.deleteStudent = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.getMyStatus = catchAsync(async (req, res, next) => {
+exports.getMyStatus = catchAsync(async (req, res) => {
     const StudentPlacementStatus = require('../models/StudentPlacementStatus');
     const Company = require('../models/Company');
     const Round = require('../models/Round');
@@ -230,7 +230,7 @@ exports.getMyStatus = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.getMyChildStatus = catchAsync(async (req, res, next) => {
+exports.getMyChildStatus = catchAsync(async (req, res) => {
     const StudentPlacementStatus = require('../models/StudentPlacementStatus');
     const Company = require('../models/Company');
     const Round = require('../models/Round');
@@ -271,3 +271,5 @@ exports.getMyChildStatus = catchAsync(async (req, res, next) => {
         data: { statuses: result, studentName: student.name }
     });
 });
+
+

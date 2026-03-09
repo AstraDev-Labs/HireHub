@@ -57,3 +57,4 @@ exports.deleteNotification = catchAsync(async (req, res, next) => {
     await Notification.delete({ id: notification.id });
     res.status(200).json({ status: 'success', message: 'Deleted' });
 });
+
