@@ -108,7 +108,7 @@ export default function ChallengesPage() {
                 {filteredChallenges.map((challenge: any) => (
                     <Card
                         key={challenge.id}
-                        className="group relative overflow-hidden border-border hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer bg-card/50 backdrop-blur-sm"
+                        className="group relative flex h-full flex-col overflow-hidden border-border cursor-pointer bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5"
                         onClick={() => router.push(`/challenges/${challenge.id}`)}
                     >
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -125,7 +125,7 @@ export default function ChallengesPage() {
                             <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors">{challenge.title}</CardTitle>
                         </CardHeader>
 
-                        <CardContent className="pb-6">
+                        <CardContent className="flex-1 pb-6">
                             <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed mb-4">
                                 {challenge.description}
                             </p>
@@ -156,3 +156,4 @@ export default function ChallengesPage() {
         </div>
     );
 }
+
