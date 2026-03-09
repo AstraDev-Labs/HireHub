@@ -24,36 +24,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     try {
         // Fetch Public Companies
-        const companiesRes = await fetch(`${backendUrl}/companies/public`, { next: { revalidate: 3600 } });
+        const companiesRes = await fetch(`${backendUrl}/companies/public`, { 
+            next: { revalidate: 3600 },
+            headers: { 'Accept': 'application/json' }
+        });
+        
         let companyRoutes: MetadataRoute.Sitemap = [];
-        if (companiesRes.ok) {
-            const data = await companiesRes.json();
-            const companies: Company[] = data.data.companies || [];
-            companyRoutes = companies.map((company) => ({
-                url: `${baseUrl}/companies/${company._id}`,
-                lastModified: company.updatedAt || new Date().toISOString(),
-                changeFrequency: 'weekly' as const,
-                priority: 0.8,
-            }));
+        if (companiesRes.ok && companiesRes.headers.get('content-type')?.includes('application/json')) {
+            try {
+                const data = await companiesRes.json();
+                const companies: Company[] = data.data?.companies || [];
+                companyRoutes = companies.map((company) => ({
+                    url: `${baseUrl}/companies/${company._id}`,
+                    lastModified: company.updatedAt || new Date().toISOString(),
+                    changeFrequency: 'weekly' as const,
+                    priority: 0.8,
+                }));
+            } catch (e) {
+                console.error("Failed to parse companies JSON:", e);
+            }
         }
 
         // Fetch Public Challenges
-        const challengesRes = await fetch(`${backendUrl}/challenges`, { next: { revalidate: 3600 } });
+        const challengesRes = await fetch(`${backendUrl}/challenges`, { 
+            next: { revalidate: 3600 },
+            headers: { 'Accept': 'application/json' }
+        });
+        
         let challengeRoutes: MetadataRoute.Sitemap = [];
-        if (challengesRes.ok) {
-            const data = await challengesRes.json();
-            const challenges: Challenge[] = data.data.challenges || [];
-            challengeRoutes = challenges.map((challenge) => ({
-                url: `${baseUrl}/challenges/${challenge._id}`,
-                lastModified: challenge.updatedAt || new Date().toISOString(),
-                changeFrequency: 'weekly' as const,
-                priority: 0.7,
-            }));
+        if (challengesRes.ok && challengesRes.headers.get('content-type')?.includes('application/json')) {
+            try {
+                const data = await challengesRes.json();
+                const challenges: Challenge[] = data.data?.challenges || [];
+                challengeRoutes = challenges.map((challenge) => ({
+                    url: `${baseUrl}/challenges/${challenge._id}`,
+                    lastModified: challenge.updatedAt || new Date().toISOString(),
+                    changeFrequency: 'weekly' as const,
+                    priority: 0.7,
+                }));
+            } catch (e) {
+                console.error("Failed to parse challenges JSON:", e);
+            }
         }
 
         return [...staticRoutes, ...companyRoutes, ...challengeRoutes];
     } catch (error) {
-        console.error("Sitemap generation failed:", error);
+        console.error("Sitemap generation caught top-level error:", error);
         // Fallback to static routes if dynamic fetching fails
         return staticRoutes; 
     }
