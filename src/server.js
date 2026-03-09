@@ -3,6 +3,38 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
+let server;
+
+function writeCrashLog(prefix, error, onComplete) {
+    const log = `${new Date().toISOString()} - ${prefix}: ${error.name} - ${error.message}\n${error.stack || ''}\n\n`;
+    fs.appendFile('crash.log', log, (logError) => {
+        if (logError) {
+            console.error(`Failed to write crash log for ${prefix.toLowerCase()}:`, logError);
+        }
+        onComplete();
+    });
+}
+
+process.on('uncaughtException', (error) => {
+    console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+    console.log(error.name, error.message);
+    writeCrashLog('UNCAUGHT EXCEPTION', error, () => {
+        process.exit(1);
+    });
+});
+
+process.on('unhandledRejection', (error) => {
+    console.log('UNHANDLED REJECTION! 💥 Shutting down...');
+    console.log(error.name, error.message);
+    writeCrashLog('UNHANDLED REJECTION', error, () => {
+        if (server && typeof server.close === 'function') {
+            server.close(() => process.exit(1));
+        } else {
+            process.exit(1);
+        }
+    });
+});
+
 dotenv.config();
 
 const validateEnv = require('./utils/validateEnv');
@@ -135,7 +167,7 @@ app.use(globalErrorHandler);
 
 if (!process.env.LAMBDA_TASK_ROOT) {
     const PORT = process.env.PORT || 5000;
-    const server = app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
         console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
         console.log('🔒 Security: Helmet, Rate Limiting, Sanitization, HPP — ACTIVE');
     });
@@ -143,25 +175,6 @@ if (!process.env.LAMBDA_TASK_ROOT) {
     server.keepAliveTimeout = 65000;
     server.headersTimeout = 66000;
     server.requestTimeout = 15000;
-
-    process.on('uncaughtException', (error) => {
-        console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
-        console.log(error.name, error.message);
-        const log = `${new Date().toISOString()} - UNCAUGHT EXCEPTION: ${error.name} - ${error.message}\n${error.stack}\n\n`;
-        fs.appendFileSync('crash.log', log);
-        process.exit(1);
-    });
-
-    process.on('unhandledRejection', (error) => {
-        console.log('UNHANDLED REJECTION! 💥 Shutting down...');
-        console.log(error.name, error.message);
-        const log = `${new Date().toISOString()} - UNHANDLED REJECTION: ${error.name} - ${error.message}\n${error.stack}\n\n`;
-        fs.appendFileSync('crash.log', log);
-        server.close(() => {
-            process.exit(1);
-        });
-    });
 }
 
 module.exports = app;
-

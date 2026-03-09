@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import api from '@/lib/api';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
@@ -14,10 +14,10 @@ interface Challenge {
     id: string;
     title: string;
     difficulty: string;
+    description?: string;
     topicTags?: string[];
     [key: string]: unknown;
 }
-import { useMemo } from 'react';
 
 export default function ChallengesPage() {
     const { user } = useAuth();
@@ -164,5 +164,4 @@ export default function ChallengesPage() {
         </div>
     );
 }
-
 

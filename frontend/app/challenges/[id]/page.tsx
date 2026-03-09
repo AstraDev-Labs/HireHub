@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
     ChevronLeft, Play, Send, Layout, Terminal, CheckCircle2, 
@@ -24,6 +24,8 @@ import { format } from 'date-fns';
 // ---------------- Types ----------------
 type CodeSnippet = { language: string; code: string };
 
+type TestCase = { input: string; output: string; isSample?: boolean };
+
 type Challenge = {
     id: string | number;
     title?: string;
@@ -31,7 +33,7 @@ type Challenge = {
     difficulty?: string;
     constraints?: string;
     codeSnippets?: CodeSnippet[];
-    testCases?: Array<{ input: string; output: string; isSample?: boolean }>;
+    testCases?: TestCase[];
     [key: string]: unknown;
 };
 
@@ -57,22 +59,14 @@ type Submission = {
     studentEmail?: string;
     status?: string;
     language?: string;
+    code?: string;
     createdAt?: string;
-    [key: string]: unknown;
-};
-
-type ChallengeSubmission = {
-    id: string;
-    user: { id: string; name?: string | null; email?: string | null };
-    status: string;
-    language: string;
-    code: string;
-    createdAt: string;
     updatedAt?: string;
     runtime?: number | null;
     memory?: number | null;
     error?: string | null;
     output?: string | null;
+    [key: string]: unknown;
 };
 // ---------------------------------------
 
@@ -91,11 +85,11 @@ export default function ChallengeDetailPage() {
     const [submitting, setSubmitting] = useState(false);
     const [code, setCode] = useState('');
     const [language, setLanguage] = useState('javascript');
-    const [result, setResult] = useState<Challenge | null>(null);
+    const [result, setResult] = useState<ChallengeResult | null>(null);
     const [activeTab, setActiveTab] = useState('description');
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-    const [selectedSubmission, setSelectedSubmission] = useState<Challenge | null>(null);
+    const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     const { user } = useAuth();
@@ -121,7 +115,7 @@ export default function ChallengeDetailPage() {
                 setChallenge(data);
 
                 // Set initial code from snippet if available
-                const snippet = data.codeSnippets?.find((s: any) => s.language === 'javascript');
+                const snippet = data.codeSnippets?.find((s: CodeSnippet) => s.language === 'javascript');
                 if (snippet) setCode(decodeHTMLEntities(snippet.code));
 
                 // If staff/admin, fetch all submissions for this challenge
@@ -141,7 +135,7 @@ export default function ChallengeDetailPage() {
     const handleLanguageChange = (newLang: string) => {
         setLanguage(newLang);
         // Find snippet for new language
-        const snippet = challenge.codeSnippets?.find((s: any) => s.language.toLowerCase() === newLang.toLowerCase());
+        const snippet = challenge?.codeSnippets?.find((s: CodeSnippet) => s.language.toLowerCase() === newLang.toLowerCase());
         if (snippet) {
             setCode(decodeHTMLEntities(snippet.code));
         } else {
@@ -183,10 +177,12 @@ export default function ChallengeDetailPage() {
 
     if (loading) return <div className="p-20 text-center animate-pulse">Initializing Environment...</div>;
 
+    if (!challenge) return <div className="p-20 text-center">Challenge not found.</div>;
+
     if (user?.role === 'STAFF' || user?.role === 'ADMIN') {
-        const filteredSubmissions = submissions.filter(s => 
-            s.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            s.studentEmail.toLowerCase().includes(searchTerm.toLowerCase())
+        const filteredSubmissions = submissions.filter((s) =>
+            (s.studentName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (s.studentEmail ?? '').toLowerCase().includes(searchTerm.toLowerCase())
         );
 
         return (
@@ -286,20 +282,20 @@ export default function ChallengeDetailPage() {
                                                             <TableRow key={sub.id} className={`cursor-pointer hover:bg-muted/20 ${selectedSubmission?.id === sub.id ? 'bg-primary/5' : ''}`} onClick={() => setSelectedSubmission(sub)}>
                                                                 <TableCell>
                                                                     <div className="flex flex-col">
-                                                                        <span className="font-bold text-sm">{sub.studentName}</span>
-                                                                        <span className="text-[10px] text-muted-foreground uppercase">{sub.studentEmail}</span>
+                                                                        <span className="font-bold text-sm">{sub.studentName ?? 'Unknown Student'}</span>
+                                                                        <span className="text-[10px] text-muted-foreground uppercase">{sub.studentEmail ?? 'No email'}</span>
                                                                     </div>
                                                                 </TableCell>
                                                                 <TableCell>
-                                                                    <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-widest">{sub.language}</Badge>
+                                                                    <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-widest">{sub.language ?? 'unknown'}</Badge>
                                                                 </TableCell>
                                                                 <TableCell>
                                                                     <span className={`text-xs font-bold ${sub.status === 'Accepted' ? 'text-green-500' : 'text-red-500'}`}>
-                                                                        {sub.status}
+                                                                        {sub.status ?? 'Unknown'}
                                                                     </span>
                                                                 </TableCell>
                                                                 <TableCell className="text-xs text-muted-foreground font-mono">
-                                                                    {format(new Date(sub.createdAt), 'MMM d, HH:mm')}
+                                                                    {sub.createdAt ? format(new Date(sub.createdAt), 'MMM d, HH:mm') : 'Unknown'}
                                                                 </TableCell>
                                                                 <TableCell className="text-right">
                                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-primary">
@@ -320,15 +316,15 @@ export default function ChallengeDetailPage() {
                                                     <div className="px-4 py-2 border-b border-white/10 bg-black/40 flex items-center justify-between">
                                                         <div className="flex items-center gap-2">
                                                             <User className="w-4 h-4 text-primary" />
-                                                            <span className="text-xs font-bold text-white uppercase tracking-widest">{selectedSubmission.studentName}'s Solution</span>
+                                                            <span className="text-xs font-bold text-white uppercase tracking-widest">{selectedSubmission.studentName ?? 'Unknown Student'}'s Solution</span>
                                                         </div>
-                                                        <Badge variant="outline" className="text-[10px] border-white/20 text-white/50">{selectedSubmission.language}</Badge>
+                                                        <Badge variant="outline" className="text-[10px] border-white/20 text-white/50">{selectedSubmission.language ?? 'unknown'}</Badge>
                                                     </div>
                                                     <div className="flex-1 relative overflow-hidden">
                                                         <Editor
                                                             height="100%"
-                                                            language={selectedSubmission.language.toLowerCase()}
-                                                            value={selectedSubmission.code}
+                                                            language={(selectedSubmission.language ?? 'plaintext').toLowerCase()}
+                                                            value={selectedSubmission.code ?? ''}
                                                             theme="vs-dark"
                                                             options={{
                                                                 readOnly: true,
@@ -371,7 +367,7 @@ export default function ChallengeDetailPage() {
                                     <div className="space-y-6">
                                         <h4 className="text-sm font-bold uppercase tracking-widest text-primary">Test Cases</h4>
                                         <div className="grid gap-4">
-                                            {challenge.testCases?.map((test: any, i: number) => (
+                                            {challenge.testCases?.map((test: TestCase, i: number) => (
                                                 <div key={i} className={`p-4 rounded-xl border ${test.isSample ? 'border-primary/20 bg-primary/5' : 'border-border bg-card'}`}>
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className="text-xs font-bold uppercase tracking-tighter opacity-70">
@@ -483,7 +479,7 @@ export default function ChallengeDetailPage() {
 
                                 <div className="mt-8 space-y-6">
                                     <h4 className="text-sm font-bold uppercase tracking-widest text-primary">Sample Test Cases</h4>
-                                    {challenge.testCases?.filter((t: any) => t.isSample).map((test: any, i: number) => (
+                                    {challenge.testCases?.filter((t: TestCase) => t.isSample).map((test: TestCase, i: number) => (
                                         <div key={i} className="space-y-3 bg-muted/30 p-4 rounded-xl border border-border">
                                             <p className="text-xs font-bold text-muted-foreground uppercase">Example {i + 1}</p>
                                             <div className="grid grid-cols-2 gap-4">
@@ -517,7 +513,7 @@ export default function ChallengeDetailPage() {
                                 <div className="p-8 space-y-6 animate-in slide-in-from-top-4 duration-500">
                                     <div className="flex items-center justify-between p-4 bg-muted/40 rounded-2xl border border-border">
                                         <div className="flex items-center gap-4">
-                                            {result.result === 'Accepted' ? (
+                                            {result!.result === 'Accepted' ? (
                                                 <div className="p-2 bg-green-500/20 rounded-full">
                                                     <CheckCircle2 className="w-6 h-6 text-green-500" />
                                                 </div>
@@ -528,41 +524,41 @@ export default function ChallengeDetailPage() {
                                             )}
                                             <div>
                                                 <p className="text-xs font-bold text-muted-foreground uppercase opacity-70">Status</p>
-                                                <p className={`text-xl font-black ${result.result === 'Accepted' ? 'text-green-500' : 'text-red-500'}`}>
-                                                    {result.result}
+                                                <p className={`text-xl font-black ${result!.result === 'Accepted' ? 'text-green-500' : 'text-red-500'}`}>
+                                                    {result!.result}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="text-right">
                                                 <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-end gap-1"><Clock className="w-3 h-3" /> Time</p>
-                                                <p className="font-mono text-foreground font-bold">{result.execution.time || '0'} s</p>
+                                                <p className="font-mono text-foreground font-bold">{result!.execution.time || '0'} s</p>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center justify-end gap-1"><Cpu className="w-3 h-3" /> Memory</p>
-                                                <p className="font-mono text-foreground font-bold">{result.execution.memory || '0'} KB</p>
+                                                <p className="font-mono text-foreground font-bold">{result!.execution.memory || '0'} KB</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {(result.execution.stdout || result.execution.compile_output || result.execution.stderr) && (
+                                    {(result!.execution.stdout || result!.execution.compile_output || result!.execution.stderr) && (
                                         <div className="space-y-4">
-                                            {result.execution.stdout && (
+                                            {result!.execution.stdout && (
                                                 <div className="space-y-2">
                                                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Standard Output</p>
-                                                    <pre className="p-4 bg-black rounded-xl border border-white/5 text-xs text-green-400 overflow-x-auto font-mono">{result.execution.stdout}</pre>
+                                                    <pre className="p-4 bg-black rounded-xl border border-white/5 text-xs text-green-400 overflow-x-auto font-mono">{result!.execution.stdout}</pre>
                                                 </div>
                                             )}
-                                            {result.execution.compile_output && (
+                                            {result!.execution.compile_output && (
                                                 <div className="space-y-2">
                                                     <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Compilation Output</p>
-                                                    <pre className="p-4 bg-red-950/20 rounded-xl border border-red-500/20 text-xs text-red-400 overflow-x-auto font-mono">{result.execution.compile_output}</pre>
+                                                    <pre className="p-4 bg-red-950/20 rounded-xl border border-red-500/20 text-xs text-red-400 overflow-x-auto font-mono">{result!.execution.compile_output}</pre>
                                                 </div>
                                             )}
-                                            {result.execution.stderr && (
+                                            {result!.execution.stderr && (
                                                 <div className="space-y-2">
                                                     <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Error Log</p>
-                                                    <pre className="p-4 bg-red-950/20 rounded-xl border border-red-500/20 text-xs text-red-400 overflow-x-auto font-mono">{result.execution.stderr}</pre>
+                                                    <pre className="p-4 bg-red-950/20 rounded-xl border border-red-500/20 text-xs text-red-400 overflow-x-auto font-mono">{result!.execution.stderr}</pre>
                                                 </div>
                                             )}
                                         </div>
@@ -601,7 +597,4 @@ export default function ChallengeDetailPage() {
         </div>
     );
 }
-
-
-
 
