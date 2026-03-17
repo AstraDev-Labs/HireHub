@@ -27,6 +27,7 @@ const seedData = async () => {
             email: 'admin@cpms.com',
             password: 'password123',
             fullName: 'System Admin',
+            phoneNumber: '1234567890',
             role: 'ADMIN',
             approvalStatus: 'APPROVED'
         });
@@ -37,6 +38,7 @@ const seedData = async () => {
             email: 'john@student.com',
             password: 'password123',
             fullName: 'John Doe',
+            phoneNumber: '1234567890',
             role: 'STUDENT',
             approvalStatus: 'APPROVED',
             isActive: true
@@ -48,6 +50,7 @@ const seedData = async () => {
             email: 'jane@staff.com',
             password: 'password123',
             fullName: 'Jane Staff',
+            phoneNumber: '1234567890',
             role: 'STAFF',
             approvalStatus: 'APPROVED'
         });
