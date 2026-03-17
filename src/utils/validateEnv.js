@@ -54,6 +54,19 @@ function validateEnv() {
         console.warn('⚠️  JWT_SECRET is shorter than 32 characters — consider using a stronger secret.');
     }
 
+    // Warn if using default or weak secrets in production
+    if (process.env.NODE_ENV === 'production') {
+        const weakSecrets = ['secret', '123456', 'password', 'default_secret'];
+        if (weakSecrets.some(s => process.env.JWT_SECRET.includes(s) || process.env.JWT_REFRESH_SECRET.includes(s))) {
+            console.error('❌ FATAL: Weak or default JWT secrets used in production environment! Shutting down.');
+            process.exit(1);
+        }
+
+        if (!process.env.RSA_PRIVATE_KEY) {
+            console.warn('⚠️  PRODUCTION WARNING: RSA_PRIVATE_KEY is not set. Login payloads will be sent in plaintext.');
+        }
+    }
+
     console.log('✅ Environment validation passed');
 }
 

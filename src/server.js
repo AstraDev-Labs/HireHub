@@ -65,6 +65,17 @@ const sanitize = require('./middlewares/sanitize');
 const { setCSRFToken, validateCSRF } = require('./middlewares/csrfProtection');
 
 const AppError = require('./utils/AppError');
+
+// Enforce HTTPS middleware for production
+const enforceHTTPS = (req, res, next) => {
+    if (process.env.NODE_ENV === 'production') {
+        // req.secure is true if the connection is HTTPS or if the app is behind a proxy that sets X-Forwarded-Proto to https
+        if (!req.secure && req.get('x-forwarded-proto') !== 'https') {
+            return res.redirect(`https://${req.hostname}${req.url}`);
+        }
+    }
+    next();
+};
 const globalErrorHandler = require('./middlewares/errorMiddleware');
 const loggerMiddleware = require('./middlewares/loggerMiddleware');
 
@@ -93,6 +104,8 @@ app.set('trust proxy', 1);
 app.get('/api/healthz', (req, res) => {
     res.status(200).json({ status: 'success', uptime: process.uptime() });
 });
+
+app.use(enforceHTTPS);
 
 app.use(helmet({
     contentSecurityPolicy: {
