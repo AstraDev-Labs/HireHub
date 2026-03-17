@@ -3,6 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
+// Load environment variables
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
 let server;
 
 function writeCrashLog(prefix, error, onComplete) {
