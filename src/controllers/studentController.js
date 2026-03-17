@@ -112,17 +112,21 @@ exports.getAllStudents = catchAsync(async (req, res) => {
 
     // Parallel populate: fetch all user details at once
     const User = require('../models/User');
-    const result = await Promise.all(students.map(async (s) => {
+
+    const populatedStudents = await Promise.all(students.map(async (s) => {
         const obj = typeof s.toJSON === 'function' ? s.toJSON() : { ...s };
         obj._id = obj.id;
         if (obj.userId) {
             const user = await User.findById(obj.userId);
-            if (user) {
+            if (user && user.approvalStatus === 'APPROVED') {
                 obj.userId = { _id: user.id, fullName: user.fullName, email: user.email };
+                return obj;
             }
         }
-        return obj;
+        return null;
     }));
+
+    const result = populatedStudents.filter(s => s !== null);
 
     res.status(200).json({
         status: 'success',

@@ -131,27 +131,33 @@ exports.rejectUser = catchAsync(async (req, res) => {
         }
     }
 
-    await User.update({ id: user.id }, { approvalStatus: 'DENIED' });
+    // Send notification before deleting so it can potentially be retrieved
+    // Note: In a real system, sending email might be better since the account is deleted
+    // For now, we will maintain the Notification in DB if the user ever re-registers
+    // or keep a log. However, since the user is deleted, notifications tied to the user
+    // ID will be orphaned. We will log it instead.
+    await logAction(req, 'DELETE', 'User', user.id, `Rejected and deleted user: ${user.fullName} (${user.role})`);
 
-    // Trigger notification
-    await Notification.createNotification({
-        userId: user.id,
-        type: 'REGISTRATION_REJECTED',
-        title: 'Registration Rejected',
-        message: 'Your registration has been rejected. Please contact the placement cell for more information.',
-        link: '/profile'
-    });
+    // Clean up associated records
+    if (user.role === 'STUDENT') {
+        const student = await Student.findByUserId(user.id);
+        if (student) {
+            await Student.delete({ id: student.id });
+        }
+    } else if (user.role === 'COMPANY') {
+        if (user.companyId) {
+            const Company = require('../models/Company');
+            await Company.delete({ id: user.companyId });
+        }
+    }
 
-    // Audit Logging
-    await logAction(req, 'UPDATE', 'User', user.id, `Rejected user: ${user.fullName} (${user.role})`);
-
-    const updatedUser = await User.findById(user.id);
-    const obj = sanitizeUser(updatedUser);
-    obj._id = obj.id;
+    // Delete the user
+    await User.delete({ id: user.id });
 
     res.status(200).json({
         status: 'success',
-        data: { user: obj }
+        message: 'User has been rejected and deleted successfully.',
+        data: null
     });
 });
 

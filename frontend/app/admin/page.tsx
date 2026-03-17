@@ -34,7 +34,7 @@ export default function AdminDashboard() {
                             <Clock className="w-5 h-5 text-blue-500" />
                             Pending Approvals
                         </CardTitle>
-                        <CardDescription>Review and approve new user registrations</CardDescription>
+                        <CardDescription>Review and approve student applications for companies.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Link href="/admin/approvals">
