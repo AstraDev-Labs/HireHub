@@ -9,14 +9,18 @@ const { getOrSetCached } = require('../utils/asyncCache');
 
 exports.getDashboardStats = catchAsync(async (req, res) => {
     const data = await getOrSetCached('dashboard:admin:stats', 15000, async () => {
-        const [allStudents, allCompanies, allPlacements, pendingUsers, allOffers, totalChallenges] = await Promise.all([
+        const [rawStudents, allCompanies, allPlacements, pendingUsers, allOffers, totalChallenges, approvedUsers] = await Promise.all([
             Student.findAll(),
             Company.findAll(),
             StudentPlacementStatus.findAll(),
             User.scan().where('approvalStatus').eq('PENDING').exec(),
             OfferLetter.findAll(),
             Challenge.countAll(),
+            User.scan().where('approvalStatus').eq('APPROVED').exec()
         ]);
+
+        const approvedUserIds = new Set(approvedUsers.map(u => u.id));
+        const allStudents = rawStudents.filter(s => approvedUserIds.has(s.userId));
 
         const totalStudents = allStudents.length;
         const placedStudents = allStudents.filter((student) => student.placementStatus === 'PLACED').length;

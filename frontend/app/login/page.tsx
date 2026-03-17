@@ -40,20 +40,20 @@ export default function LoginPage() {
             const keyResponse = await api.get('/auth/key');
             const publicKeyPem = keyResponse.data.publicKey;
 
-            // 2. Encrypt the password using the public key
-            const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
-            const encryptedPassword = publicKey.encrypt(values.password, 'RSA-OAEP', {
-                md: forge.md.sha256.create(),
-                mgf1: {
-                    md: forge.md.sha256.create()
-                }
-            });
+            // 2. Encrypt the password using the public key if available
+            let secureValues = { ...values };
+            if (publicKeyPem) {
+                const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
+                const encryptedPassword = publicKey.encrypt(values.password, 'RSA-OAEP', {
+                    md: forge.md.sha256.create(),
+                    mgf1: {
+                        md: forge.md.sha256.create()
+                    }
+                });
 
-            // 3. Send the request with the base64 encoded encrypted password
-            const secureValues = {
-                ...values,
-                password: forge.util.encode64(encryptedPassword)
-            };
+                // 3. Send the request with the base64 encoded encrypted password
+                secureValues.password = forge.util.encode64(encryptedPassword);
+            }
 
             const response = await api.post('/auth/login', secureValues);
             const { token, refreshToken, data } = response.data;
