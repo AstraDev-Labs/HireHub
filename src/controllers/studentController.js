@@ -135,11 +135,16 @@ exports.getAllStudents = catchAsync(async (req, res) => {
     });
 });
 
-exports.getStudent = catchAsync(async (req, res) => {
+exports.getStudent = catchAsync(async (req, res, next) => {
     const student = await Student.findById(req.params.id);
 
     if (!student) {
         return next(new AppError('No student found with that ID', 404));
+    }
+
+    // IDOR protection: A student can only view their own profile directly, unless they are admin/company/staff
+    if (req.user.role === 'STUDENT' && student.userId !== req.user._id && student.userId !== req.user.id) {
+        return next(new AppError('You are not authorized to view this profile', 403));
     }
 
     const User = require('../models/User');
@@ -158,14 +163,14 @@ exports.getStudent = catchAsync(async (req, res) => {
     });
 });
 
-exports.updateStudent = catchAsync(async (req, res) => {
+exports.updateStudent = catchAsync(async (req, res, next) => {
     const existing = await Student.findById(req.params.id);
     if (!existing) {
         return next(new AppError('No student found with that ID', 404));
     }
 
     // Students can only update their own record
-    if (req.user.role === 'STUDENT' && existing.userId !== req.user._id) {
+    if (req.user.role === 'STUDENT' && existing.userId !== req.user._id && existing.userId !== req.user.id) {
         return next(new AppError('You can only update your own profile', 403));
     }
 

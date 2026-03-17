@@ -247,6 +247,11 @@ exports.getSubmissionStatus = async (req, res, next) => {
             return next(new AppError('No submission found with that ID', 404));
         }
 
+        // IDOR Protection: Students can only view their own submissions
+        if (req.user.role === 'STUDENT' && submission.studentId !== req.user._id && submission.studentId !== req.user.id) {
+            return next(new AppError('You are not authorized to view this submission', 403));
+        }
+
         res.status(200).json({
             status: 'success',
             data: { submission }
