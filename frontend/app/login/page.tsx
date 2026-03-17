@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import * as forge from 'node-forge';
 
 const formSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -35,7 +36,26 @@ export default function LoginPage() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true);
         try {
-            const response = await api.post('/auth/login', values);
+            // 1. Fetch the public key from the backend
+            const keyResponse = await api.get('/auth/key');
+            const publicKeyPem = keyResponse.data.publicKey;
+
+            // 2. Encrypt the password using the public key
+            const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
+            const encryptedPassword = publicKey.encrypt(values.password, 'RSA-OAEP', {
+                md: forge.md.sha256.create(),
+                mgf1: {
+                    md: forge.md.sha256.create()
+                }
+            });
+
+            // 3. Send the request with the base64 encoded encrypted password
+            const secureValues = {
+                ...values,
+                password: forge.util.encode64(encryptedPassword)
+            };
+
+            const response = await api.post('/auth/login', secureValues);
             const { token, refreshToken, data } = response.data;
             login(token, refreshToken, data.user, data.isProfileComplete);
             toast.success('Login success!');
