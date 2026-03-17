@@ -59,3 +59,9 @@ HireHub is a comprehensive, full-stack placement management platform designed to
 
 ## 🔒 Security Note
 This application has been stripped of local environment fallbacks to ensure production safety. You must provide valid environment variables via your hosting provider (e.g., Vercel, Render) for the application to function over the network.
+
+**Database Access & IAM**:
+Direct database access from the public internet is inherently restricted by AWS. To maximize security in production:
+1. **Never** hardcode `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in your production environment variables if deploying to AWS infrastructure.
+2. Instead, assign an **IAM Role** to your EC2 instances, ECS tasks, or Lambda functions that grants least-privilege access only to the necessary DynamoDB tables.
+3. If running inside a VPC, configure a **VPC Endpoint for DynamoDB** so that database traffic never traverses the public internet.

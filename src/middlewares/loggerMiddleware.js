@@ -13,7 +13,8 @@ function shouldLogRequest(req, res) {
         return false;
     }
 
-    if (res.statusCode >= 500) {
+    // Always log server errors, unauthorized (login failure/missing token), and rate limit hits (suspicious)
+    if (res.statusCode >= 500 || res.statusCode === 401 || res.statusCode === 429) {
         return true;
     }
 

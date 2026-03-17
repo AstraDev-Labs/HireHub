@@ -18,6 +18,30 @@ const globalLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+const accountCreationLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // Max 10 accounts per hour per IP
+    skip: shouldSkipRateLimit,
+    message: {
+        status: 'fail',
+        message: 'Too many accounts created from this IP. Please try again after an hour.',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const otpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 mins
+    max: 15, // Max 15 OTP requests per IP per 15 min
+    skip: shouldSkipRateLimit,
+    message: {
+        status: 'fail',
+        message: 'Too many OTP requests from this IP. Please try again after 15 minutes.',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 50,
@@ -42,4 +66,4 @@ const uploadLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-module.exports = { globalLimiter, authLimiter, uploadLimiter };
+module.exports = { globalLimiter, authLimiter, uploadLimiter, accountCreationLimiter, otpLimiter };
