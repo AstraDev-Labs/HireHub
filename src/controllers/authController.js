@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Student = require('../models/Student');
 const OTP = require('../models/OTP');
 const catchAsync = require('../utils/catchAsync');
+const forge = require('node-forge');
 const AppError = require('../utils/AppError');
 const sendEmail = require('../utils/sendEmail');
 const dynamoose = require('../config/dynamodb');
@@ -19,6 +20,19 @@ const signToken = id => {
 const signRefreshToken = id => {
     return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, {
         expiresIn: process.env.JWT_REFRESH_EXPIRES_IN
+    });
+};
+
+// Generate RSA key pair for payload encryption
+console.log('Generating RSA key pair for secure login...');
+const keypair = forge.pki.rsa.generateKeyPair({ bits: 2048, e: 0x10001 });
+const publicKeyPem = forge.pki.publicKeyToPem(keypair.publicKey);
+console.log('RSA key pair generated successfully.');
+
+exports.getPublicKey = (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        publicKey: publicKeyPem
     });
 };
 
@@ -192,10 +206,26 @@ function clearAttempts(email) {
 }
 
 exports.login = catchAsync(async (req, res, next) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
     if (!email || !password) {
         return next(new AppError('Please provide email and password', 400));
+    }
+
+    // Attempt to decrypt the password
+    try {
+        const encryptedBytes = forge.util.decode64(password);
+        const decryptedPassword = keypair.privateKey.decrypt(encryptedBytes, 'RSA-OAEP', {
+            md: forge.md.sha256.create(),
+            mgf1: {
+                md: forge.md.sha256.create()
+            }
+        });
+        password = decryptedPassword;
+    } catch (err) {
+        // If it fails to decrypt, we assume it's plain text (fallback for older clients/testing)
+        // or just invalid. We'll proceed with the raw string and bcrypt will fail if it's junk.
+        console.warn('Login password decryption failed, falling back to raw string.');
     }
 
     // Check account lockout

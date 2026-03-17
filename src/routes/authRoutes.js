@@ -6,6 +6,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 router.post('/register', authController.register);
+router.get('/key', authController.getPublicKey);
 router.post('/login', authController.login);
 router.post('/logout', authMiddleware.protect, authController.logout);
 router.post('/refresh-token', authController.refreshToken);
