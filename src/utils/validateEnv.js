@@ -58,9 +58,8 @@ function validateEnv() {
     if (process.env.NODE_ENV === 'production') {
         const weakSecrets = ['secret', '123456', 'password', 'default_secret'];
         if (weakSecrets.some(s => process.env.JWT_SECRET.includes(s) || process.env.JWT_REFRESH_SECRET.includes(s))) {
-            console.error('⚠️  CRITICAL: Weak or default JWT secrets used in production environment!');
-            // Downgraded from fatal to warning to prevent crashing existing deployed environments.
-            // process.exit(1);
+            console.error('❌ FATAL: Weak or default JWT secrets used in production environment! Shutting down.');
+            process.exit(1);
         }
 
         if (!process.env.RSA_PRIVATE_KEY) {
