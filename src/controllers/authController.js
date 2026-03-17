@@ -23,16 +23,25 @@ const signRefreshToken = id => {
     });
 };
 
-// Generate RSA key pair for payload encryption
-console.log('Generating RSA key pair for secure login...');
-const keypair = forge.pki.rsa.generateKeyPair({ bits: 2048, e: 0x10001 });
-const publicKeyPem = forge.pki.publicKeyToPem(keypair.publicKey);
-console.log('RSA key pair generated successfully.');
+// Ensure RSA keys are loaded from environment
+const rsaPrivateKeyPem = process.env.RSA_PRIVATE_KEY;
+const rsaPublicKeyPem = process.env.RSA_PUBLIC_KEY;
+
+let privateKey = null;
+if (rsaPrivateKeyPem) {
+    try {
+        privateKey = forge.pki.privateKeyFromPem(rsaPrivateKeyPem);
+    } catch (e) {
+        console.error('Failed to parse RSA_PRIVATE_KEY', e);
+    }
+} else {
+    console.warn('RSA_PRIVATE_KEY is not defined in environment variables. Login payload decryption will fail.');
+}
 
 exports.getPublicKey = (req, res) => {
     res.status(200).json({
         status: 'success',
-        publicKey: publicKeyPem
+        publicKey: rsaPublicKeyPem
     });
 };
 
@@ -213,19 +222,24 @@ exports.login = catchAsync(async (req, res, next) => {
     }
 
     // Attempt to decrypt the password
-    try {
-        const encryptedBytes = forge.util.decode64(password);
-        const decryptedPassword = keypair.privateKey.decrypt(encryptedBytes, 'RSA-OAEP', {
-            md: forge.md.sha256.create(),
-            mgf1: {
-                md: forge.md.sha256.create()
-            }
-        });
-        password = decryptedPassword;
-    } catch (err) {
-        // If it fails to decrypt, we assume it's plain text (fallback for older clients/testing)
-        // or just invalid. We'll proceed with the raw string and bcrypt will fail if it's junk.
-        console.warn('Login password decryption failed, falling back to raw string.');
+    if (privateKey) {
+        try {
+            // Check if it's base64 (encrypted string) before attempting decryption
+            const encryptedBytes = forge.util.decode64(password);
+            const decryptedPassword = privateKey.decrypt(encryptedBytes, 'RSA-OAEP', {
+                md: forge.md.sha256.create(),
+                mgf1: {
+                    md: forge.md.sha256.create()
+                }
+            });
+            password = decryptedPassword;
+        } catch (err) {
+            // If it fails to decrypt, assume it's plain text (fallback for environments without frontend keys config)
+            console.warn('Login password decryption failed, falling back to raw string.');
+        }
+    } else {
+        // No private key configured; fallback to raw password
+        console.warn('No RSA private key configured. Proceeding with plaintext password.');
     }
 
     // Check account lockout
