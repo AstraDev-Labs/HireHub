@@ -3,6 +3,7 @@ const Company = require('../models/Company');
 const Round = require('../models/Round');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const { populateMultiple } = require('../utils/dynamoPopulate');
 
 const auditLogger = require('../utils/auditLogger');
 
@@ -30,22 +31,28 @@ exports.getResources = catchAsync(async (req, res) => {
 
     const resources = await PrepResource.findByFilter(filter);
 
-    // Manual populate
-    const result = [];
-    for (const r of resources) {
+    // Optimized Manual populate with batch fetching (solves N+1)
+    const items = resources.map(r => {
         const obj = typeof r.toJSON === 'function' ? r.toJSON() : { ...r };
         obj._id = r.id || obj.id;
-        
-        if (obj.companyId && typeof obj.companyId === 'string') {
-            const company = await Company.findById(obj.companyId);
-            if (company) obj.companyId = { _id: company.id, name: company.name };
+        return obj;
+    });
+
+    await populateMultiple(items, [
+        { field: 'companyId', Model: Company, select: 'name' },
+        { field: 'roundId', Model: Round, select: 'roundName' }
+    ]);
+
+    // Format population to match expected output if necessary
+    const result = items.map(obj => {
+        if (obj.companyId && typeof obj.companyId === 'object') {
+            obj.companyId = { _id: obj.companyId.id, name: obj.companyId.name };
         }
-        if (obj.roundId && typeof obj.roundId === 'string') {
-            const round = await Round.findById(obj.roundId);
-            if (round) obj.roundId = { _id: round.id, roundName: round.roundName };
+        if (obj.roundId && typeof obj.roundId === 'object') {
+            obj.roundId = { _id: obj.roundId.id, roundName: obj.roundId.roundName };
         }
-        result.push(obj);
-    }
+        return obj;
+    });
 
     res.status(200).json({ status: 'success', results: result.length, data: { resources: result } });
 });
