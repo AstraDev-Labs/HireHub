@@ -90,24 +90,26 @@ exports.updatePlacementStatus = catchAsync(async (req, res) => {
     try {
         const parents = await User.findAll({ role: 'PARENT', linkedStudentId: studentId });
 
-        for (const parent of parents) {
+        if (parents && parents.length > 0) {
             const student = await Student.findById(studentId);
-            const statusMsg = status === 'CLEARED' ? 'cleared a round' :
-                status === 'PLACED' ? 'been placed' :
-                    status === 'OFFERED' ? 'received an offer' :
-                        status === 'REJECTED' ? 'not cleared a round' : 'had a status update';
+            for (const parent of parents) {
+                const statusMsg = status === 'CLEARED' ? 'cleared a round' :
+                    status === 'PLACED' ? 'been placed' :
+                        status === 'OFFERED' ? 'received an offer' :
+                            status === 'REJECTED' ? 'not cleared a round' : 'had a status update';
 
-            const messageContent = `Dear ${parent.fullName},\n\nYour child, ${student ? student.name : 'Unknown'}, has ${statusMsg}.\n\nUpdate Details:\nStatus: ${status}\n\nPlease check the Student Progress dashboard for full details.\n\nBest Regards,\nHireHub Placement Cell`;
+                const messageContent = `Dear ${parent.fullName},\n\nYour child, ${student ? student.name : 'Unknown'}, has ${statusMsg}.\n\nUpdate Details:\nStatus: ${status}\n\nPlease check the Student Progress dashboard for full details.\n\nBest Regards,\nHireHub Placement Cell`;
 
-            await Message.create({
-                senderId: req.user._id,
-                senderName: 'HireHub System',
-                senderRole: 'SYSTEM',
-                receiverId: parent.id,
-                subject: 'Updates Regarding your Child - HireHub',
-                content: messageContent,
-                type: 'SYSTEM'
-            });
+                await Message.create({
+                    senderId: req.user._id,
+                    senderName: 'HireHub System',
+                    senderRole: 'SYSTEM',
+                    receiverId: parent.id,
+                    subject: 'Updates Regarding your Child - HireHub',
+                    content: messageContent,
+                    type: 'SYSTEM'
+                });
+            }
         }
     } catch (err) {
         console.error("Failed to send parent internal message:", err);
