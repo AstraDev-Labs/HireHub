@@ -5,15 +5,12 @@ dotenv.config();
 require('./src/config/dynamodb');
 
 const User = require('./src/models/User');
-console.log('User model path:', require.resolve('./src/models/User'));
 const Student = require('./src/models/Student');
 const Company = require('./src/models/Company');
 
 const seedData = async () => {
     try {
         console.log('🌱 Seed script started...');
-        console.log('User Model Keys:', Object.keys(User));
-        console.log('User.createWithHash exists?', typeof User.createWithHash);
 
         console.log('⏳ Waiting for DynamoDB tables to be created...');
 
