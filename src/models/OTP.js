@@ -1,5 +1,6 @@
 const dynamoose = require('../config/dynamodb');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 const otpSchema = new dynamoose.Schema({
     id: {
@@ -40,7 +41,7 @@ const OTP = dynamoose.model('OTP', otpSchema);
 OTP.generate = function (length = 6) {
     let code = '';
     for (let i = 0; i < length; i++) {
-        code += Math.floor(Math.random() * 10);
+        code += crypto.randomInt(0, 10);
     }
     return code;
 };

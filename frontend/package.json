@@ -24,6 +24,7 @@
     "dompurify": "^3.3.2",
     "driver.js": "^1.4.0",
     "exceljs": "^4.4.0",
+    "flatted": "^3.4.2",
     "framer-motion": "^12.34.1",
     "jsdom": "^23.2.0",
     "lucide-react": "^0.574.0",
