@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const multerS3 = require('multer-s3');
 const s3 = require('../config/s3Config');
 const catchAsync = require('../utils/catchAsync');
@@ -67,7 +68,7 @@ if (useS3) {
             cb(null, { fieldName: file.fieldname });
         },
         key: function (req, file, cb) {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(16).toString('hex');
             const safeExt = path.extname(file.originalname).toLowerCase();
             cb(null, 'attachments/' + uniqueSuffix + safeExt);
         }
@@ -84,7 +85,7 @@ if (useS3) {
             cb(null, uploadsDir);
         },
         filename: (req, file, cb) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(16).toString('hex');
             const safeExt = path.extname(file.originalname).toLowerCase();
             cb(null, 'attachment-' + uniqueSuffix + safeExt);
         }
