@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(configDir, '..');
+const isElectron = process.env.BUILD_TARGET === 'electron';
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -11,41 +12,50 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: workspaceRoot,
   },
-  // Security headers for all frontend routes
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
-          },
-        ],
-      },
-    ];
-  },
+  ...(isElectron
+    ? {
+        output: "standalone", // We use standalone for Next.js to run locally if needed or just fall back to standard electron loading
+        distDir: "out",
+        images: {
+          unoptimized: true,
+        },
+      }
+    : {
+        // Security headers for all frontend routes
+        async headers() {
+          return [
+            {
+              source: '/(.*)',
+              headers: [
+                {
+                  key: 'X-Frame-Options',
+                  value: 'DENY',
+                },
+                {
+                  key: 'X-Content-Type-Options',
+                  value: 'nosniff',
+                },
+                {
+                  key: 'Referrer-Policy',
+                  value: 'strict-origin-when-cross-origin',
+                },
+                {
+                  key: 'Permissions-Policy',
+                  value: 'camera=(), microphone=(), geolocation=()',
+                },
+                {
+                  key: 'X-DNS-Prefetch-Control',
+                  value: 'on',
+                },
+                {
+                  key: 'Strict-Transport-Security',
+                  value: 'max-age=31536000; includeSubDomains',
+                },
+              ],
+            },
+          ];
+        },
+      }),
 };
 
 export default nextConfig;
-
