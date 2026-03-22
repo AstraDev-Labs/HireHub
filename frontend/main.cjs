@@ -43,7 +43,8 @@ const createWindow = async () => {
           ...process.env,
           NODE_ENV: 'production',
           PORT: port.toString(),
-          ELECTRON_RUN_AS_NODE: '1'
+          ELECTRON_RUN_AS_NODE: '1',
+          NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
         }
       });
 
