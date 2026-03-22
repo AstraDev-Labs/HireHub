@@ -66,7 +66,7 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "main": "main.js",
+  "main": "main.cjs",
   "build": {
     "appId": "com.hirehub.app",
     "productName": "HireHub",
@@ -74,7 +74,7 @@
       "output": "dist_electron"
     },
     "files": [
-      "main.js",
+      "main.cjs",
       "out/standalone/**/*",
       "out/static/**/*",
       "package.json"
