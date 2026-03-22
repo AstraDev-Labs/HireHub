@@ -10,7 +10,7 @@
     "lint": "eslint",
     "test": "echo \"No test specified\" && exit 0",
     "electron:dev": "concurrently \"cross-env BUILD_TARGET=electron next dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "cross-env BUILD_TARGET=electron NEXT_PUBLIC_API_URL=http://localhost:5000/api next build && electron-builder"
+    "electron:build": "cross-env BUILD_TARGET=electron next build && electron-builder"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -97,6 +97,13 @@
       {
         "from": "public",
         "to": "out/standalone/frontend/public",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": ".env.production",
+        "to": ".env",
         "filter": [
           "**/*"
         ]

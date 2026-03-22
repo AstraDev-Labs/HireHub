@@ -3,6 +3,18 @@ const path = require('path');
 const { spawn } = require('child_process');
 const waitOn = require('wait-on');
 const net = require('net');
+const fs = require('fs');
+
+// Try loading a .env file next to the executable if it exists for the backend URLs
+const envPath = path.join(process.resourcesPath, '.env');
+let parsedEnv = {};
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const match = line.match(/^([^=]+)=(.*)$/);
+    if (match) parsedEnv[match[1].trim()] = match[2].trim();
+  });
+}
 
 let nextProcess = null;
 
@@ -41,10 +53,10 @@ const createWindow = async () => {
         cwd: nextDir,
         env: {
           ...process.env,
+          ...parsedEnv,
           NODE_ENV: 'production',
           PORT: port.toString(),
-          ELECTRON_RUN_AS_NODE: '1',
-          NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+          ELECTRON_RUN_AS_NODE: '1'
         }
       });
 
