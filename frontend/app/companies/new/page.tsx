@@ -46,9 +46,7 @@ export default function AddCompanyPage() {
     // Since useAuth might load user asynchronously, we should wait.
     // But for now, let's do a simple check.
 
-    if (user?.role && user.role !== 'ADMIN') {
-        return <div className="p-8 text-center text-red-500">Access Denied: Only Admins can add companies.</div>;
-    }
+
 
     const form = useForm({
         resolver: zodResolver(formSchema),
