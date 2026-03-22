@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "echo \"No test specified\" && exit 0",
+    "electron:dev": "concurrently \"cross-env BUILD_TARGET=electron next dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "cross-env BUILD_TARGET=electron next build && electron-builder"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -38,7 +40,8 @@
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "wait-on": "^9.0.4"
   },
   "overrides": {
     "dompurify": "^3.3.2"
@@ -54,9 +57,60 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "main": "main.js",
+  "build": {
+    "appId": "com.hirehub.app",
+    "productName": "HireHub",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "main.js",
+      "out/standalone/**/*",
+      "out/static/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "out/standalone",
+        "to": "out/standalone",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "out/static",
+        "to": "out/standalone/frontend/out/static",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "public",
+        "to": "out/standalone/frontend/public",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
   }
 }
