@@ -8,6 +8,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
+import { EncryptionManager } from '@/lib/encryption';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 interface ProfileData {
@@ -44,7 +45,7 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
-    const { user } = useAuth();
+    const { user, privateKey } = useAuth();
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -130,7 +131,27 @@ export default function ProfilePage() {
 
         setChangingPassword(true);
         try {
-            await api.patch('/users/change-password', { currentPassword, newPassword });
+            let payload: any = { currentPassword, newPassword };
+
+            // If we have an active private key in memory, re-encrypt it with the NEW password
+            if (privateKey && user) {
+                try {
+                    const exportedPrivJWK = await EncryptionManager.exportKey(privateKey);
+                    const newEncryptedPrivKey = await EncryptionManager.encryptWithPassword(
+                        exportedPrivJWK,
+                        newPassword,
+                        user.email.toLowerCase()
+                    );
+                    payload.encryptedPrivateKey = newEncryptedPrivKey;
+                } catch (e) {
+                    console.error("Failed to re-encrypt private key with new password", e);
+                    toast.error("Failed to secure encryption keys with new password.");
+                    setChangingPassword(false);
+                    return;
+                }
+            }
+
+            await api.patch('/users/change-password', payload);
             toast.success("Password changed successfully!");
             setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
         } catch (err: any) {

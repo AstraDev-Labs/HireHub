@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import api from '@/lib/api';
+import { EncryptionManager } from '@/lib/encryption';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -260,8 +261,25 @@ export default function RegisterPage() {
         }
         setIsLoading(true);
         try {
+            // Generate Encryption Keys during signup
+            toast.loading("Securing account...", { id: "securing" });
+            const keyPair = await EncryptionManager.generateKeyPair();
+            const pubJWK = await EncryptionManager.exportKey(keyPair.publicKey);
+            const privJWK = await EncryptionManager.exportKey(keyPair.privateKey);
+
+            // Encrypt the private key with the user's password
+            // We use the email (lowercased) as salt to make it unique per user
+            const encryptedPrivateKey = await EncryptionManager.encryptWithPassword(
+                privJWK,
+                values.password,
+                values.email.toLowerCase()
+            );
+            toast.dismiss("securing");
+
             const payload: any = {
                 fullName: values.fullName,
+                publicKey: pubJWK,
+                encryptedPrivateKey: encryptedPrivateKey,
                 username: values.username,
                 email: values.email,
                 password: values.password,

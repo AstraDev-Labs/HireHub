@@ -114,7 +114,9 @@ exports.register = catchAsync(async (req, res, next) => {
             linkedStudentId: req.body.linkedStudentId,
             approvalStatus: 'PENDING',
             emailVerified: req.body.phoneVerified || false,
-            phoneVerified: req.body.phoneVerified || false
+            phoneVerified: req.body.phoneVerified || false,
+            publicKey: req.body.publicKey || null,
+            encryptedPrivateKey: req.body.encryptedPrivateKey || null
         })
     ];
 

@@ -162,10 +162,10 @@ exports.rejectUser = catchAsync(async (req, res) => {
 });
 
 exports.updatePublicKey = catchAsync(async (req, res) => {
-    const { publicKey } = req.body;
-    if (!publicKey) return next(new AppError('Please provide a public key', 400));
+    const { publicKey, encryptedPrivateKey } = req.body;
+    if (!publicKey || !encryptedPrivateKey) return next(new AppError('Please provide both public key and encrypted private key', 400));
 
-    await User.update({ id: req.user._id }, { publicKey });
+    await User.update({ id: req.user._id }, { publicKey, encryptedPrivateKey });
 
     res.status(200).json({ status: 'success' });
 });
@@ -176,7 +176,7 @@ exports.getUserPublicKey = catchAsync(async (req, res) => {
 
     res.status(200).json({
         status: 'success',
-        data: { publicKey: user.publicKey }
+        data: { publicKey: user.publicKey, encryptedPrivateKey: user.encryptedPrivateKey }
     });
 });
 
@@ -293,7 +293,7 @@ exports.updateMe = catchAsync(async (req, res) => {
 
 // Change Password
 exports.changePassword = catchAsync(async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword, encryptedPrivateKey } = req.body;
 
     if (!currentPassword || !newPassword) {
         return next(new AppError('Please provide current and new password', 400));
@@ -322,7 +322,13 @@ exports.changePassword = catchAsync(async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await User.update({ id: user.id }, { password: hashedPassword });
+
+    const updateData = { password: hashedPassword };
+    if (encryptedPrivateKey) {
+        updateData.encryptedPrivateKey = encryptedPrivateKey;
+    }
+    await User.update({ id: user.id }, updateData);
+
 
     res.status(200).json({ status: 'success', message: 'Password changed successfully' });
 });

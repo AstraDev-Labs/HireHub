@@ -60,6 +60,7 @@ const userSchema = new dynamoose.Schema({
     refreshToken: String,
     lastLogin: String,
     publicKey: { type: String, default: null },
+    encryptedPrivateKey: { type: String, default: null },
     profileImage: { type: String, default: null },
     passwordResetToken: { type: String, required: false },
     passwordResetExpires: { type: Number, required: false }

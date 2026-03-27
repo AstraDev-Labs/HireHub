@@ -63,7 +63,7 @@ const DecryptedContent = ({ content, isEncrypted, privateKey }: { content: strin
 
 
 export default function MessagesPage() {
-    const { user } = useAuth();
+    const { user, privateKey: contextPrivateKey } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -76,21 +76,8 @@ export default function MessagesPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
-    // Private key cache
-    const [myPrivateKey, setMyPrivateKey] = useState<CryptoKey | null>(null);
-
-    useEffect(() => {
-        const loadPriv = async () => {
-            if (user) {
-                const jwk = localStorage.getItem(`priv-${user._id}`);
-                if (jwk) {
-                    const key = await EncryptionManager.importPrivateKey(jwk);
-                    setMyPrivateKey(key);
-                }
-            }
-        };
-        loadPriv();
-    }, [user]);
+    // Use the private key from context
+    const myPrivateKey = contextPrivateKey || null;
 
     // Compose State
     const [isComposeOpen, setIsComposeOpen] = useState(false);
@@ -200,7 +187,16 @@ export default function MessagesPage() {
                 const res = await api.get(`/users/${replyToId}/public-key`);
                 if (res.data.data.publicKey) {
                     const pubKey = await EncryptionManager.importPublicKey(res.data.data.publicKey);
-                    const encrypted = await EncryptionManager.encrypt(replyContent, pubKey);
+
+                    const keysToEncryptFor = [pubKey];
+
+                    // Add my own public key so I can read my sent message later
+                    if (user?.publicKey) {
+                        const myPubKey = await EncryptionManager.importPublicKey(user.publicKey);
+                        keysToEncryptFor.push(myPubKey);
+                    }
+
+                    const encrypted = await EncryptionManager.encrypt(replyContent, keysToEncryptFor);
                     finalContent = JSON.stringify(encrypted);
                     isEncrypted = true;
                 }
@@ -242,7 +238,16 @@ export default function MessagesPage() {
                     const res = await api.get(`/users/${receiverId}/public-key`);
                     if (res.data.data.publicKey) {
                         const pubKey = await EncryptionManager.importPublicKey(res.data.data.publicKey);
-                        const encrypted = await EncryptionManager.encrypt(content, pubKey);
+
+                        const keysToEncryptFor = [pubKey];
+
+                        // Add my own public key so I can read my sent message later
+                        if (user?.publicKey) {
+                            const myPubKey = await EncryptionManager.importPublicKey(user.publicKey);
+                            keysToEncryptFor.push(myPubKey);
+                        }
+
+                        const encrypted = await EncryptionManager.encrypt(content, keysToEncryptFor);
                         finalContent = JSON.stringify(encrypted);
                         isEncrypted = true;
                     }
