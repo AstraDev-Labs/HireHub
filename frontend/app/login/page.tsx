@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
+import { EncryptionManager } from '@/lib/encryption';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -21,7 +22,7 @@ const formSchema = z.object({
 });
 
 export default function LoginPage() {
-    const { login } = useAuth();
+    const { login, setPrivateKey } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 

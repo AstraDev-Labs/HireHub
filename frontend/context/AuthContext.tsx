@@ -23,6 +23,8 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
+    privateKey?: CryptoKey | null;
+    setPrivateKey?: (key: CryptoKey | null) => void;
     loading: boolean;
     login: (token: string, refreshToken: string, user: User, isProfileComplete?: boolean) => void;
     logout: () => void;
@@ -31,6 +33,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
+    privateKey: null,
+    setPrivateKey: () => {},
     loading: true,
     login: () => { },
     logout: () => { },
@@ -38,6 +42,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+    const [privateKey, setPrivateKey] = useState<CryptoKey | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -118,32 +123,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user, loading, pathname, router]);
 
-    // Handle Encryption Keys
-    useEffect(() => {
-        const handleKeys = async () => {
-            if (user && !localStorage.getItem(`priv-${user._id}`)) {
-                console.log("Generating encryption keys...");
-                const keyPair = await EncryptionManager.generateKeyPair();
-                const pubJWK = await EncryptionManager.exportKey(keyPair.publicKey);
-                const privJWK = await EncryptionManager.exportKey(keyPair.privateKey);
-
-                localStorage.setItem(`pub-${user._id}`, pubJWK);
-                localStorage.setItem(`priv-${user._id}`, privJWK);
-
-                // Update server with public key
-                try {
-                    await api.patch('/users/update-public-key', { publicKey: pubJWK });
-                } catch (err) {
-                    console.error("Failed to sync public key:", err);
-                }
-            }
-        };
-        if (user) handleKeys();
-    }, [user]);
+    // Encryption keys are now handled during login, so we don't automatically generate them here.
+    // This allows true end-to-end encryption across devices since the key is derived from the password.
 
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ user, privateKey, setPrivateKey, loading, login, logout, isAuthenticated: !!user }}>
             {children}
         </AuthContext.Provider>
     );
