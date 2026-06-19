@@ -7,16 +7,16 @@ const Challenge = require('../models/Challenge');
 const catchAsync = require('../utils/catchAsync');
 const { getOrSetCached } = require('../utils/asyncCache');
 
-exports.getDashboardStats = catchAsync(async (req, res) => {
+exports.getDashboardStats = catchAsync(async (req, res, next) => {
     const data = await getOrSetCached('dashboard:admin:stats', 15000, async () => {
         const [rawStudents, allCompanies, allPlacements, pendingUsers, allOffers, totalChallenges, approvedUsers] = await Promise.all([
             Student.findAll(),
             Company.findAll(),
             StudentPlacementStatus.findAll(),
-            User.scan().where('approvalStatus').eq('PENDING').exec(),
+            User.find({ approvalStatus: 'PENDING' }),
             OfferLetter.findAll(),
             Challenge.countAll(),
-            User.scan().where('approvalStatus').eq('APPROVED').exec()
+            User.find({ approvalStatus: 'APPROVED' })
         ]);
 
         const approvedUserIds = new Set(approvedUsers.map(u => u.id));
@@ -105,7 +105,7 @@ exports.getDashboardStats = catchAsync(async (req, res) => {
     });
 });
 
-exports.getStudentDashboard = catchAsync(async (req, res) => {
+exports.getStudentDashboard = catchAsync(async (req, res, next) => {
     const data = await getOrSetCached(`dashboard:student:${req.user._id}`, 10000, async () => {
         const student = await Student.findByUserId(req.user._id);
         if (!student) {
@@ -148,7 +148,7 @@ exports.getStudentDashboard = catchAsync(async (req, res) => {
     res.status(200).json({ status: 'success', data });
 });
 
-exports.getCompanyDashboard = catchAsync(async (req, res) => {
+exports.getCompanyDashboard = catchAsync(async (req, res, next) => {
     const companyId = req.user.companyId;
     if (!companyId) {
         return res.status(200).json({ status: 'success', data: { totalApplicants: 0, rounds: [], pipeline: [] } });

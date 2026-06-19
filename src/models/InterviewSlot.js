@@ -1,26 +1,26 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const interviewSchema = new dynamoose.Schema({
+const interviewSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: () => uuidv4(),
+        index: true
     },
     driveId: {
         type: String,
         required: true,
-        index: { name: 'DriveInterviewIndex', type: 'global' }
+        index: true
     },
     companyId: {
         type: String,
         required: true,
-        index: { name: 'CompanyInterviewIndex', type: 'global' }
+        index: true
     },
     studentId: {
         type: String,
         required: true,
-        index: { name: 'StudentInterviewIndex', type: 'global' }
+        index: true
     },
     roundId: {
         type: String,
@@ -52,22 +52,22 @@ const interviewSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const InterviewSlot = dynamoose.model('InterviewSlot', interviewSchema);
-
-InterviewSlot.findById = async function (id) {
-    try { return await InterviewSlot.get(id); } catch { return null; }
+interviewSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-InterviewSlot.findByStudentId = async function (studentId) {
-    return InterviewSlot.query('studentId').eq(studentId).using('StudentInterviewIndex').exec();
+interviewSchema.statics.findByStudentId = async function (studentId) {
+    return this.find({ studentId });
 };
 
-InterviewSlot.findByCompanyId = async function (companyId) {
-    return InterviewSlot.query('companyId').eq(companyId).using('CompanyInterviewIndex').exec();
+interviewSchema.statics.findByCompanyId = async function (companyId) {
+    return this.find({ companyId });
 };
 
-InterviewSlot.findByDriveId = async function (driveId) {
-    return InterviewSlot.query('driveId').eq(driveId).using('DriveInterviewIndex').exec();
+interviewSchema.statics.findByDriveId = async function (driveId) {
+    return this.find({ driveId });
 };
+
+const InterviewSlot = mongoose.model('InterviewSlot', interviewSchema);
 
 module.exports = InterviewSlot;

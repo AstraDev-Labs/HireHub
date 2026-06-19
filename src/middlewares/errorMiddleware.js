@@ -4,6 +4,7 @@ const handleDynamoDBValidationError = (err) => new AppError(`Invalid input data:
 const handleDynamoDBConditionalError = () => new AppError('The operation could not be completed due to a conflict.', 409);
 const handleJWTError = () => new AppError('Invalid token. Please log in again!', 401);
 const handleJWTExpiredError = () => new AppError('Your token has expired! Please log in again.', 401);
+const handleCastErrorDB = (err) => new AppError(`Invalid ${err.path}: ${err.value}.`, 401); // 401 to force re-login if invalid ID
 
 const sendErrorDev = (err, res) => {
     console.error('ERROR 💥', err);
@@ -41,6 +42,7 @@ module.exports = (err, req, res, _next) => {
         error.message = err.message;
 
         if (error.name === 'Validation_error') error = handleDynamoDBValidationError(error);
+        if (error.name === 'CastError') error = handleCastErrorDB(error);
         if (error.code === 'ConditionalCheckFailedException') error = handleDynamoDBConditionalError();
         if (error.name === 'JsonWebToken_error') error = handleJWTError();
         if (error.name === 'TokenExpired_error') error = handleJWTExpiredError();

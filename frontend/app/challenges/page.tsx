@@ -51,13 +51,29 @@ export default function ChallengesPage() {
         }
     };
 
+    const [difficultyFilter, setDifficultyFilter] = useState('All');
+    const [visibleCount, setVisibleCount] = useState(20);
+
     const filteredChallenges = useMemo(() => {
-        return challenges.filter((challenge: Challenge) => 
-            challenge.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            challenge.difficulty.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            challenge.topicTags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-    }, [challenges, searchQuery]);
+        let filtered = challenges;
+        
+        if (difficultyFilter !== 'All') {
+            filtered = filtered.filter((c: Challenge) => c.difficulty === difficultyFilter);
+        }
+
+        if (searchQuery) {
+            filtered = filtered.filter((challenge: Challenge) => 
+                challenge.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                challenge.difficulty.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                challenge.topicTags?.some((tag: string) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+            );
+        }
+        return filtered;
+    }, [challenges, searchQuery, difficultyFilter]);
+
+    const displayedChallenges = useMemo(() => {
+        return filteredChallenges.slice(0, visibleCount);
+    }, [filteredChallenges, visibleCount]);
 
     if (loading) {
         return (
@@ -90,11 +106,13 @@ export default function ChallengesPage() {
                             Create Challenge
                         </Button>
                     )}
-                    {user?.role === 'STUDENT' && (
+                    {(user?.role === 'STUDENT' || user?.role === 'PARENT') && (
                         <Card className="bg-primary/5 border-primary/10 px-4 py-2 md:px-6 md:py-3 flex items-center gap-3 w-full sm:w-auto">
                             <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
                             <div>
-                                <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">Programs Completed</p>
+                                <p className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    {user?.role === 'PARENT' ? 'Child Programs Completed' : 'Programs Completed'}
+                                </p>
                                 <p className="text-lg md:text-xl font-bold">{solvedCount}</p>
                             </div>
                         </Card>
@@ -102,18 +120,32 @@ export default function ChallengesPage() {
                 </div>
             </div>
 
-            <div className="mb-8 relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Search by title, difficulty, or tags..." 
-                    className="pl-10 h-12 bg-card/50 backdrop-blur-sm border-border hover:border-primary/50 transition-colors"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
+            <div className="flex flex-col md:flex-row gap-4 mb-8">
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search by title, difficulty, or tags..." 
+                        className="pl-10 h-12 bg-card/50 backdrop-blur-sm border-border hover:border-primary/50 transition-colors"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="flex gap-2 bg-card/50 backdrop-blur-sm p-1 rounded-lg border border-border">
+                    {['All', 'Easy', 'Medium', 'Hard'].map((diff) => (
+                        <Button 
+                            key={diff} 
+                            variant={difficultyFilter === diff ? 'default' : 'ghost'} 
+                            onClick={() => { setDifficultyFilter(diff); setVisibleCount(20); }}
+                            className="h-10 px-4 text-sm font-semibold rounded-md"
+                        >
+                            {diff}
+                        </Button>
+                    ))}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-                {filteredChallenges.map((challenge: Challenge) => (
+                {displayedChallenges.map((challenge: Challenge) => (
                     <Card
                         key={challenge.id}
                         className="group relative flex h-full flex-col overflow-hidden border-border cursor-pointer bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5"
@@ -153,6 +185,19 @@ export default function ChallengesPage() {
                     </Card>
                 ))}
             </div>
+
+            {visibleCount < filteredChallenges.length && (
+                <div className="flex justify-center mt-12 mb-8">
+                    <Button 
+                        variant="outline" 
+                        size="lg" 
+                        onClick={() => setVisibleCount(v => v + 20)}
+                        className="border-primary/20 hover:border-primary hover:bg-primary hover:text-white px-10 rounded-full font-bold transition-all shadow-md"
+                    >
+                        Load More Questions ({filteredChallenges.length - visibleCount} left)
+                    </Button>
+                </div>
+            )}
 
             {filteredChallenges.length === 0 && (
                 <div className="text-center py-20 bg-muted/20 border-2 border-dashed border-border rounded-2xl animate-in zoom-in-95 duration-500">

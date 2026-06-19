@@ -1,11 +1,11 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const challengeSchema = new dynamoose.Schema({
+const challengeSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     title: {
         type: String,
@@ -21,57 +21,39 @@ const challengeSchema = new dynamoose.Schema({
         default: 'Medium'
     },
     topicTags: {
-        type: Array,
-        schema: [String]
+        type: [String]
     },
     constraints: String,
-    testCases: {
-        type: Array,
-        schema: [{
-            type: Object,
-            schema: {
-                input: String,
-                output: String,
-                isSample: { type: Boolean, default: false }
-            }
-        }]
-    },
-    codeSnippets: {
-        type: Array,
-        schema: [{
-            type: Object,
-            schema: {
-                language: String,
-                code: String
-            }
-        }]
-    },
+    testCases: [{
+        input: String,
+        output: String,
+        isSample: { type: Boolean, default: false }
+    }],
+    codeSnippets: [{
+        language: String,
+        code: String
+    }],
     createdBy: {
         type: String,
         required: true,
-        index: { name: 'CreatedByIndex', type: 'global' }
+        index: true
     }
 }, {
     timestamps: true
 });
 
-const Challenge = dynamoose.model('Challenge', challengeSchema);
-
-Challenge.findById = async function (id) {
-    try { return await Challenge.get(id); } catch { return null; }
+challengeSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-Challenge.findAll = async function (filter = {}) {
-    let scan = Challenge.scan();
-    for (const [key, value] of Object.entries(filter)) {
-        scan = scan.where(key).eq(value);
-    }
-    return scan.exec();
+challengeSchema.statics.findAll = async function (filter = {}) {
+    return this.find(filter);
 };
 
-Challenge.countAll = async function () {
-    const results = await Challenge.scan().exec();
-    return results.length;
+challengeSchema.statics.countAll = async function () {
+    return this.countDocuments();
 };
+
+const Challenge = mongoose.model('Challenge', challengeSchema);
 
 module.exports = Challenge;

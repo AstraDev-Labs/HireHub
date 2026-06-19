@@ -52,7 +52,8 @@ if (process.env.FRONTEND_URL) {
     }
 }
 
-require('./config/dynamodb');
+const { connectDB } = require('./config/db');
+connectDB();
 
 const morgan = require('morgan');
 const helmet = require('helmet');

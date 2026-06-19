@@ -1,21 +1,21 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const offerLetterSchema = new dynamoose.Schema({
+const offerLetterSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     studentId: {
         type: String,
         required: true,
-        index: { name: 'StudentOfferIndex', type: 'global' }
+        index: true
     },
     companyId: {
         type: String,
         required: true,
-        index: { name: 'CompanyOfferIndex', type: 'global' }
+        index: true
     },
     studentName: { type: String, required: true },
     companyName: { type: String, required: true },
@@ -35,22 +35,22 @@ const offerLetterSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const OfferLetter = dynamoose.model('OfferLetter', offerLetterSchema);
-
-OfferLetter.findById = async function (id) {
-    try { return await OfferLetter.get(id); } catch { return null; }
+offerLetterSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-OfferLetter.findByStudentId = async function (studentId) {
-    return OfferLetter.query('studentId').eq(studentId).using('StudentOfferIndex').exec();
+offerLetterSchema.statics.findByStudentId = async function (studentId) {
+    return this.find({ studentId });
 };
 
-OfferLetter.findByCompanyId = async function (companyId) {
-    return OfferLetter.query('companyId').eq(companyId).using('CompanyOfferIndex').exec();
+offerLetterSchema.statics.findByCompanyId = async function (companyId) {
+    return this.find({ companyId });
 };
 
-OfferLetter.findAll = async function () {
-    return OfferLetter.scan().exec();
+offerLetterSchema.statics.findAll = async function () {
+    return this.find();
 };
+
+const OfferLetter = mongoose.model('OfferLetter', offerLetterSchema);
 
 module.exports = OfferLetter;

@@ -1,11 +1,12 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
+const { logsDb } = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
-const logSchema = new dynamoose.Schema({
+const logSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     userId: String,
     action: String,
@@ -17,11 +18,11 @@ const logSchema = new dynamoose.Schema({
         type: String,
         default: () => new Date().toISOString()
     },
-    metadata: Object
+    metadata: mongoose.Schema.Types.Mixed
 }, {
     timestamps: false
 });
 
-const Log = dynamoose.model('Log', logSchema);
+const Log = logsDb.model('Log', logSchema);
 
 module.exports = Log;

@@ -118,7 +118,7 @@ export default function InterviewsPage() {
         try {
             setLoading(true);
             let endpoint = '';
-            if (user?.role === 'STUDENT') endpoint = '/interviews/student';
+            if (user?.role === 'STUDENT' || user?.role === 'PARENT') endpoint = '/interviews/student';
             else if (user?.role === 'COMPANY') endpoint = '/interviews/company';
             else if (user?.role === 'ADMIN' || user?.role === 'STAFF') endpoint = '/interviews/all';
 

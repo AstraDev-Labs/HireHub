@@ -1,11 +1,13 @@
 const PlacementDrive = require('../models/PlacementDrive');
 const Company = require('../models/Company');
+const DriveApplication = require('../models/DriveApplication');
+const Student = require('../models/Student');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const { logAction } = require('../utils/auditLogger');
 
 // Get all drives (sorted by date)
-exports.getAllDrives = catchAsync(async (req, res) => {
+exports.getAllDrives = catchAsync(async (req, res, next) => {
     const drives = await PlacementDrive.findAll();
 
     // Auto-delete expired drives
@@ -16,7 +18,7 @@ exports.getAllDrives = catchAsync(async (req, res) => {
     for (const drive of drives) {
         if (new Date(drive.date) < today) {
             // Expired, delete it
-            await PlacementDrive.delete({ id: drive.id });
+            await PlacementDrive.deleteOne({ id: drive.id });
         } else {
             validDrives.push(drive);
         }
@@ -24,11 +26,24 @@ exports.getAllDrives = catchAsync(async (req, res) => {
 
     const sorted = validDrives.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    const result = sorted.map(d => {
+    let result = sorted.map(d => {
         const obj = typeof d.toJSON === 'function' ? d.toJSON() : { ...d };
         obj._id = obj.id;
         return obj;
     });
+
+    if (req.user && req.user.role === 'PARENT' && req.user.linkedStudentId) {
+        const student = await Student.findOne({ userId: req.user.linkedStudentId }) || await Student.findOne({ id: req.user.linkedStudentId });
+        if (student) {
+            const applications = await DriveApplication.find({ studentId: student.id });
+            const appliedDriveIds = applications.map(app => app.driveId);
+            result = result.filter(d => appliedDriveIds.includes(d.id));
+        } else {
+            result = [];
+        }
+    } else if (req.user && req.user.role === 'PARENT') {
+        result = [];
+    }
 
     res.status(200).json({ status: 'success', data: { drives: result } });
 });
@@ -41,7 +56,7 @@ exports.getDrive = catchAsync(async (req, res, next) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (new Date(drive.date) < today) {
-        await PlacementDrive.delete({ id: drive.id });
+        await PlacementDrive.deleteOne({ id: drive.id });
         return next(new AppError('Drive has expired and has been deleted', 404));
     }
 
@@ -127,7 +142,7 @@ exports.updateDrive = catchAsync(async (req, res, next) => {
         return next(new AppError('Min CGPA must be between 0 and 10.', 400));
     }
 
-    await PlacementDrive.update({ id: drive.id }, updates);
+    await PlacementDrive.updateOne({ id: drive.id }, updates);
     const updated = await PlacementDrive.findById(drive.id);
 
     // Audit Logging
@@ -148,7 +163,7 @@ exports.deleteDrive = catchAsync(async (req, res, next) => {
         return next(new AppError('Not authorized to delete this drive', 403));
     }
 
-    await PlacementDrive.delete({ id: drive.id });
+    await PlacementDrive.deleteOne({ id: drive.id });
 
     // Audit Logging
     await logAction(req, 'DELETE', 'Drive', drive.id, `Deleted placement drive: ${drive.title}`);

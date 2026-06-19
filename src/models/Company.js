@@ -1,16 +1,16 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const companySchema = new dynamoose.Schema({
+const companySchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     name: {
         type: String,
         required: true,
-        index: { name: 'CompanyNameIndex', type: 'global' }
+        index: true
     },
     email: {
         type: String,
@@ -27,17 +27,15 @@ const companySchema = new dynamoose.Schema({
         default: 0
     },
     eligibleDepartments: {
-        type: Array,
-        schema: [String],
+        type: [String],
         default: []
     },
     jobRoles: {
-        type: Array,
-        schema: [String],
+        type: [String],
         default: []
     },
     jobDescriptions: {
-        type: Object,
+        type: mongoose.Schema.Types.Mixed,
         default: {}
     },
     packageLpa: {
@@ -45,8 +43,7 @@ const companySchema = new dynamoose.Schema({
         required: true
     },
     location: {
-        type: Array,
-        schema: [String],
+        type: [String],
         default: []
     },
     description: String
@@ -54,25 +51,20 @@ const companySchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const Company = dynamoose.model('Company', companySchema);
-
 // --- Static Methods ---
 
-Company.findById = async function (id) {
-    try { return await Company.get(id); } catch { return null; }
+companySchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-Company.findAll = async function (filter = {}) {
-    let scan = Company.scan();
-    for (const [key, value] of Object.entries(filter)) {
-        scan = scan.where(key).eq(value);
-    }
-    return scan.exec();
+companySchema.statics.findAll = async function (filter = {}) {
+    return this.find(filter);
 };
 
-Company.countAll = async function () {
-    const results = await Company.scan().exec();
-    return results.length;
+companySchema.statics.countAll = async function () {
+    return this.countDocuments();
 };
+
+const Company = mongoose.model('Company', companySchema);
 
 module.exports = Company;

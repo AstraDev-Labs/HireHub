@@ -9,7 +9,7 @@ const catchAsync = require('../utils/catchAsync');
 const forge = require('node-forge');
 const AppError = require('../utils/AppError');
 const sendEmail = require('../utils/sendEmail');
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -98,8 +98,11 @@ exports.register = catchAsync(async (req, res, next) => {
     const userId = uuidv4();
 
     // 5. Build Transaction Operations
-    const transactionJobs = [
-        User.transaction.create({
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        await User.create([{
             id: userId,
             username: req.body.username,
             email: req.body.email.toLowerCase(),
@@ -115,13 +118,11 @@ exports.register = catchAsync(async (req, res, next) => {
             approvalStatus: 'PENDING',
             emailVerified: req.body.phoneVerified || false,
             phoneVerified: req.body.phoneVerified || false
-        })
-    ];
+        }], { session });
 
-    // 6. If Student, add Student Profile to transaction
-    if (req.body.role === 'STUDENT') {
-        transactionJobs.push(
-            Student.transaction.create({
+        // 6. If Student, add Student Profile to transaction
+        if (req.body.role === 'STUDENT') {
+            await Student.create([{
                 userId: userId,
                 name: req.body.fullName,
                 email: req.body.email.toLowerCase(),
@@ -130,12 +131,17 @@ exports.register = catchAsync(async (req, res, next) => {
                 batchYear: Number(req.body.batchYear) || new Date().getFullYear(),
                 cgpa: 0,
                 placementStatus: 'NOT_PLACED'
-            })
-        );
-    }
+            }], { session });
+        }
 
-    // 7. Execute Transaction
-    await dynamoose.transaction(transactionJobs);
+        // 7. Execute Transaction
+        await session.commitTransaction();
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        session.endSession();
+    }
 
     const newUser = {
         id: userId,
@@ -168,6 +174,25 @@ exports.register = catchAsync(async (req, res, next) => {
         } catch (emailErr) {
             console.error('⚠️ Email sending failed:', emailErr.message);
         }
+    }
+
+    // 9. Notify Admins about the new pending registration
+    try {
+        const Notification = require('../models/Notification');
+        const admins = await User.find({ role: 'ADMIN' });
+        
+        if (admins && admins.length > 0) {
+            const notifications = admins.map(admin => ({
+                userId: admin.id || admin._id,
+                type: 'GENERAL',
+                title: 'New Pending Registration',
+                message: `A new ${newUser.role} (${newUser.fullName}) has registered and is awaiting approval.`,
+                link: '/admin/registrations'
+            }));
+            await Notification.createBulk(notifications);
+        }
+    } catch (notifErr) {
+        console.error('⚠️ Failed to send admin notification for new user:', notifErr.message);
     }
 
     res.status(201).json({
@@ -286,7 +311,7 @@ exports.login = catchAsync(async (req, res, next) => {
     const refreshToken = signRefreshToken(user.id);
 
     // Update user state
-    await User.update({ id: user.id }, {
+    await User.updateOne({ _id: user._id }, {
         lastLogin: new Date().toISOString(),
         refreshToken
     });
@@ -337,7 +362,7 @@ exports.login = catchAsync(async (req, res, next) => {
     });
 });
 
-exports.logout = catchAsync(async (req, res) => {
+exports.logout = catchAsync(async (req, res, next) => {
     // Clear HttpOnly cookies
     res.cookie('jwt', 'loggedout', {
         httpOnly: true,
@@ -359,7 +384,7 @@ exports.logout = catchAsync(async (req, res) => {
     // Invalidate refresh token in DB if user is authenticated
     if (req.user) {
         try {
-            await User.update({ id: req.user._id || req.user.id }, { refreshToken: '' });
+            await User.updateOne({ id: req.user._id || req.user.id }, { refreshToken: '' });
         } catch (err) {
             console.error('Failed to clear refresh token on logout:', err.message);
             // Don't block logout if DB update fails
@@ -384,7 +409,16 @@ exports.refreshToken = catchAsync(async (req, res, next) => {
         return next(new AppError('Invalid or expired refresh token. Please log in again.', 401));
     }
 
-    const user = await User.findById(decoded.id);
+    let user;
+    try {
+        user = await User.findById(decoded.id);
+    } catch (err) {
+        if (err.name === 'CastError') {
+            return next(new AppError('Invalid or expired refresh token. Please log in again.', 401));
+        }
+        return next(err);
+    }
+
     if (!user) {
         return next(new AppError('User not found', 401));
     }
@@ -424,11 +458,11 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
     // 2. Generate the random reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const hashedToken = crypto.createHash('sha256').updateOne(resetToken).digest('hex');
     const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     // 3. Save to user object
-    await User.update({ id: user.id }, {
+    await User.updateOne({ _id: user._id }, {
         passwordResetToken: hashedToken,
         passwordResetExpires: expires
     });
@@ -453,11 +487,9 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
         });
     } catch (err) {
         console.error('ERROR SENDING EMAIL: 💥', err);
-        // Clear tokens if email fails
-        await User.update({ id: user.id }, {
-            $remove: ['passwordResetToken', 'passwordResetExpires']
-        });
-
+        // If email fails, we STILL want the emergency reset link to work!
+        // So we do NOT wipe the token from the database here.
+        
         // Log the reset link to console regardless, so user can recover if network fails
         console.log('-----------------------------------');
         console.log('🔗 EMERGENCY RESET LINK (Use this if email failed):');
@@ -470,11 +502,13 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
     // 1. Get user based on the token
-    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const hashedToken = crypto.createHash('sha256').updateOne(req.params.token).digest('hex');
 
-    // Dynamoose scan/query for token
-    const results = await User.scan('passwordResetToken').eq(hashedToken).and().where('passwordResetExpires').gt(Date.now()).exec();
-    const user = results[0];
+    // Mongoose query for token
+    const user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: Date.now() }
+    });
 
     // 2. If token has not expired, and there is user, set the new password
     if (!user) {
@@ -489,7 +523,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-    await User.update({ id: user.id }, {
+    await User.updateOne({ _id: user._id }, {
         password: hashedPassword,
         passwordResetToken: null,
         passwordResetExpires: null
@@ -499,7 +533,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     const accessToken = signToken(user.id);
     const refreshToken = signRefreshToken(user.id);
 
-    await User.update({ id: user.id }, {
+    await User.updateOne({ _id: user._id }, {
         lastLogin: new Date().toISOString(),
         refreshToken
     });

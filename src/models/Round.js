@@ -1,16 +1,16 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const roundSchema = new dynamoose.Schema({
+const roundSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: () => uuidv4(),
+        index: true
     },
     companyId: {
         type: String,
         required: true,
-        index: { name: 'CompanyRoundIndex', type: 'global' }
+        index: true
     },
     roundName: String,
     roundType: String,
@@ -23,18 +23,18 @@ const roundSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const Round = dynamoose.model('Round', roundSchema);
-
 // --- Static Methods ---
 
-Round.findById = async function (id) {
-    try { return await Round.get(id); } catch { return null; }
+roundSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-Round.findByCompanyId = async function (companyId) {
-    const results = await Round.query('companyId').eq(companyId).using('CompanyRoundIndex').exec();
+roundSchema.statics.findByCompanyId = async function (companyId) {
+    const results = await this.find({ companyId });
     // Sort by roundOrder
     return results.sort((a, b) => a.roundOrder - b.roundOrder);
 };
+
+const Round = mongoose.model('Round', roundSchema);
 
 module.exports = Round;

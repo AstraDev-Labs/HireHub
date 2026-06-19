@@ -1,16 +1,16 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const placementDriveSchema = new dynamoose.Schema({
+const placementDriveSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     companyId: {
         type: String,
         required: true,
-        index: { name: 'CompanyDriveIndex', type: 'global' }
+        index: true
     },
     companyName: { type: String, required: true },
     title: { type: String, required: true },
@@ -23,7 +23,7 @@ const placementDriveSchema = new dynamoose.Schema({
         enum: ['ON_CAMPUS', 'OFF_CAMPUS', 'VIRTUAL'],
         default: 'ON_CAMPUS'
     },
-    eligibleDepartments: { type: Array, schema: [String], default: [] },
+    eligibleDepartments: { type: [String], default: [] },
     minCgpa: { type: Number, default: 0 },
     status: {
         type: String,
@@ -35,18 +35,18 @@ const placementDriveSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const PlacementDrive = dynamoose.model('PlacementDrive', placementDriveSchema);
-
-PlacementDrive.findById = async function (id) {
-    try { return await PlacementDrive.get(id); } catch { return null; }
+placementDriveSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-PlacementDrive.findAll = async function () {
-    return PlacementDrive.scan().exec();
+placementDriveSchema.statics.findAll = async function () {
+    return this.find();
 };
 
-PlacementDrive.findByCompanyId = async function (companyId) {
-    return PlacementDrive.query('companyId').eq(companyId).using('CompanyDriveIndex').exec();
+placementDriveSchema.statics.findByCompanyId = async function (companyId) {
+    return this.find({ companyId });
 };
+
+const PlacementDrive = mongoose.model('PlacementDrive', placementDriveSchema);
 
 module.exports = PlacementDrive;

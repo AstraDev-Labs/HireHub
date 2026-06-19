@@ -9,7 +9,7 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 
 // Get all offers (Admin/Staff see all, Company sees theirs, Student sees theirs)
-exports.getOffers = catchAsync(async (req, res) => {
+exports.getOffers = catchAsync(async (req, res, next) => {
     let offers;
 
     if (['ADMIN', 'STAFF'].includes(req.user.role)) {
@@ -102,7 +102,7 @@ exports.updateOffer = catchAsync(async (req, res, next) => {
         if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
-    await OfferLetter.update({ id: offer.id }, updates);
+    await OfferLetter.updateOne({ id: offer.id }, updates);
     const updated = await OfferLetter.findById(offer.id);
     const obj = typeof updated.toJSON === 'function' ? updated.toJSON() : { ...updated };
     obj._id = obj.id;
@@ -115,7 +115,7 @@ exports.deleteOffer = catchAsync(async (req, res, next) => {
     const offer = await OfferLetter.findById(req.params.id);
     if (!offer) return next(new AppError('Offer not found', 404));
 
-    await OfferLetter.delete({ id: offer.id });
+    await OfferLetter.deleteOne({ id: offer.id });
     res.status(200).json({ status: 'success', message: 'Offer deleted' });
 });
 

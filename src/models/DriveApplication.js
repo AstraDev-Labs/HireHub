@@ -1,21 +1,21 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const driveApplicationSchema = new dynamoose.Schema({
+const driveApplicationSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     studentId: {
         type: String,
         required: true,
-        index: { name: 'StudentApplicationIndex', type: 'global' }
+        index: true
     },
     driveId: {
         type: String,
         required: true,
-        index: { name: 'DriveApplicationIndex', type: 'global' }
+        index: true
     },
     companyId: {
         type: String,
@@ -30,28 +30,24 @@ const driveApplicationSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const DriveApplication = dynamoose.model('DriveApplication', driveApplicationSchema);
-
 // --- Static Methods ---
-DriveApplication.findById = async function (id) {
-    try { return await DriveApplication.get(id); } catch { return null; }
+driveApplicationSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-DriveApplication.findByStudentId = async function (studentId) {
-    return DriveApplication.query('studentId').eq(studentId).using('StudentApplicationIndex').exec();
+driveApplicationSchema.statics.findByStudentId = async function (studentId) {
+    return this.find({ studentId });
 };
 
-DriveApplication.findByDriveId = async function (driveId) {
-    return DriveApplication.query('driveId').eq(driveId).using('DriveApplicationIndex').exec();
+driveApplicationSchema.statics.findByDriveId = async function (driveId) {
+    return this.find({ driveId });
 };
 
-DriveApplication.findOne = async function (filter) {
-    let scan = DriveApplication.scan();
-    for (const [key, value] of Object.entries(filter)) {
-        scan = scan.where(key).eq(value);
-    }
-    const results = await scan.exec();
-    return results.length > 0 ? results[0] : null;
+// Mongoose already provides findOne(), but overriding to match exact behavior if needed
+driveApplicationSchema.statics.findOneApp = async function (filter) {
+    return this.findOne(filter);
 };
+
+const DriveApplication = mongoose.model('DriveApplication', driveApplicationSchema);
 
 module.exports = DriveApplication;

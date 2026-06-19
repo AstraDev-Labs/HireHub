@@ -3,7 +3,7 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 
 // Get all notifications for the logged-in user
-exports.getMyNotifications = catchAsync(async (req, res) => {
+exports.getMyNotifications = catchAsync(async (req, res, next) => {
     const notifications = await Notification.findByUserId(req.user._id);
 
     // Sort by createdAt descending
@@ -20,7 +20,7 @@ exports.getMyNotifications = catchAsync(async (req, res) => {
 });
 
 // Get unread count
-exports.getUnreadCount = catchAsync(async (req, res) => {
+exports.getUnreadCount = catchAsync(async (req, res, next) => {
     const notifications = await Notification.findByUserId(req.user._id);
     const unreadCount = notifications.filter(n => !n.read).length;
     res.status(200).json({ status: 'success', data: { unreadCount } });
@@ -32,17 +32,17 @@ exports.markAsRead = catchAsync(async (req, res, next) => {
     if (!notification) return next(new AppError('Notification not found', 404));
     if (notification.userId !== req.user._id) return next(new AppError('Unauthorized', 403));
 
-    await Notification.update({ id: notification.id }, { read: true });
+    await Notification.updateOne({ id: notification.id }, { read: true });
     res.status(200).json({ status: 'success', message: 'Marked as read' });
 });
 
 // Mark all as read
-exports.markAllAsRead = catchAsync(async (req, res) => {
+exports.markAllAsRead = catchAsync(async (req, res, next) => {
     const notifications = await Notification.findByUserId(req.user._id);
     const unread = notifications.filter(n => !n.read);
 
     for (const n of unread) {
-        await Notification.update({ id: n.id }, { read: true });
+        await Notification.updateOne({ id: n.id }, { read: true });
     }
 
     res.status(200).json({ status: 'success', message: `Marked ${unread.length} as read` });
@@ -54,7 +54,7 @@ exports.deleteNotification = catchAsync(async (req, res, next) => {
     if (!notification) return next(new AppError('Notification not found', 404));
     if (notification.userId !== req.user._id) return next(new AppError('Unauthorized', 403));
 
-    await Notification.delete({ id: notification.id });
+    await Notification.deleteOne({ id: notification.id });
     res.status(200).json({ status: 'success', message: 'Deleted' });
 });
 

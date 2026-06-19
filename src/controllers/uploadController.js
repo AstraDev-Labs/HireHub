@@ -1,8 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const multerS3 = require('multer-s3');
-const s3 = require('../config/s3Config');
+const { storage: cloudinaryStorage } = require('../config/cloudinaryConfig');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 
@@ -48,51 +47,26 @@ function fileFilter(req, file, cb) {
     cb(null, true);
 }
 
-let storage;
-const useS3 = process.env.AWS_ACCESS_KEY_ID &&
-    process.env.AWS_SECRET_ACCESS_KEY &&
-    process.env.AWS_S3_BUCKET_NAME;
+const useAzure = !!process.env.AZURE_STORAGE_CONNECTION_STRING;
 
-if (useS3) {
-    console.log('📦 Using AWS S3 for file storage. Target Bucket:', process.env.AWS_S3_BUCKET_NAME);
-    storage = multerS3({
-        s3: s3,
-        bucket: process.env.AWS_S3_BUCKET_NAME,
-        acl: 'public-read',
-        contentType: function (req, file, cb) {
-            cb(null, file.mimetype);
-        },
-        contentDisposition: 'inline',
-        metadata: function (req, file, cb) {
-            cb(null, { fieldName: file.fieldname });
-        },
-        key: function (req, file, cb) {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            const safeExt = path.extname(file.originalname).toLowerCase();
-            cb(null, 'attachments/' + uniqueSuffix + safeExt);
-        }
-    });
-} else {
-    console.log('📁 Using Local Disk Storage for file storage');
-    const uploadsDir = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    storage = multer.diskStorage({
-        destination: (req, file, cb) => {
-            cb(null, uploadsDir);
-        },
-        filename: (req, file, cb) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            const safeExt = path.extname(file.originalname).toLowerCase();
-            cb(null, 'attachment-' + uniqueSuffix + safeExt);
-        }
-    });
+const uploadsDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const activeStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const safeExt = path.extname(file.originalname).toLowerCase();
+        cb(null, 'attachment-' + uniqueSuffix + safeExt);
+    }
+});
+
 const upload = multer({
-    storage: storage,
+    storage: activeStorage,
     fileFilter: fileFilter,
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
@@ -104,9 +78,41 @@ exports.uploadHandler = catchAsync(async (req, res, next) => {
         return next(new AppError('No file uploaded', 400));
     }
 
-    console.log(`✅ Upload: ${sanitizeFilename(req.file.originalname)} (${req.file.mimetype}, ${req.file.size} bytes)`);
+    console.log(`✅ Upload: ${sanitizeFilename(req.file.originalname)} (${req.file.mimetype}, ${req.file.size || 'N/A'} bytes)`);
 
-    const fileUrl = req.file.location || `/uploads/${req.file.filename}`;
+    let fileUrl = `/uploads/${req.file.filename}`;
+
+    if (useAzure) {
+        const { containerClient } = require('../config/azureConfig');
+        
+        if (containerClient) {
+            try {
+                console.log(`☁️ Uploading to Azure Blob Storage...`);
+                
+                // Ensure container exists
+                await containerClient.createIfNotExists({ access: 'blob' });
+
+                const ext = path.extname(req.file.originalname).toLowerCase();
+                const blobName = `file_${Date.now()}_${Math.round(Math.random() * 1E9)}${ext}`;
+                const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+                await blockBlobClient.uploadFile(req.file.path, {
+                    blobHTTPHeaders: { blobContentType: req.file.mimetype }
+                });
+
+                fileUrl = blockBlobClient.url;
+                
+                // Delete local temp file
+                if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            } catch (error) {
+                console.error('Azure upload error:', error);
+                if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+                return next(new AppError('Failed to upload file to cloud storage', 500));
+            }
+        } else {
+             console.error('⚠️ Azure is enabled but containerClient failed to initialize.');
+        }
+    }
 
     res.status(200).json({
         status: 'success',
@@ -117,4 +123,5 @@ exports.uploadHandler = catchAsync(async (req, res, next) => {
         }
     });
 });
+
 

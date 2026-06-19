@@ -1,15 +1,15 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const resourceSchema = new dynamoose.Schema({
+const resourceSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     companyId: {
         type: String,
-        index: { name: 'ResourceCompanyIndex', type: 'global' }
+        index: true
     },
     roundId: String,
     title: { type: String, required: true },
@@ -21,27 +21,16 @@ const resourceSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const PrepResource = dynamoose.model('PrepResource', resourceSchema);
-
 // --- Static Methods ---
 
-PrepResource.findById = async function (id) {
-    try { return await PrepResource.get(id); } catch { return null; }
+resourceSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-PrepResource.findByFilter = async function (filter = {}) {
-    if (filter.companyId) {
-        let results = await PrepResource.query('companyId').eq(filter.companyId).using('ResourceCompanyIndex').exec();
-        if (filter.roundId) {
-            results = results.filter(r => r.roundId === filter.roundId);
-        }
-        return results;
-    }
-    let scan = PrepResource.scan();
-    for (const [key, value] of Object.entries(filter)) {
-        scan = scan.where(key).eq(value);
-    }
-    return scan.exec();
+resourceSchema.statics.findByFilter = async function (filter = {}) {
+    return this.find(filter);
 };
+
+const PrepResource = mongoose.model('PrepResource', resourceSchema);
 
 module.exports = PrepResource;

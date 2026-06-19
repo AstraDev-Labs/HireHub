@@ -1,22 +1,22 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const messageSchema = new dynamoose.Schema({
+const messageSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     senderId: {
         type: String,
         required: true,
-        index: { name: 'SenderIndex', type: 'global' }
+        index: true
     },
     senderName: { type: String, required: true },
     senderRole: { type: String, required: true },
     receiverId: {
         type: String,
-        index: { name: 'ReceiverIndex', type: 'global' }
+        index: true
     },
     receiverRole: {
         type: String,
@@ -30,13 +30,15 @@ const messageSchema = new dynamoose.Schema({
         default: 'DIRECT'
     },
     attachments: {
-        type: Array,
-        schema: [{ type: Object, schema: { url: String, filename: String, fileType: String } }],
+        type: [{
+            url: String,
+            filename: String,
+            fileType: String
+        }],
         default: []
     },
     readBy: {
-        type: Array,
-        schema: [String],
+        type: [String],
         default: []
     },
     isEncrypted: { type: Boolean, default: false }
@@ -44,29 +46,22 @@ const messageSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const Message = dynamoose.model('Message', messageSchema);
-
 // --- Static Methods ---
 
-Message.findById = async function (id) {
-    try { return await Message.get(id); } catch { return null; }
+messageSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-Message.findForUser = async function (userId, userRole) {
+messageSchema.statics.findForUser = async function (userId, userRole) {
     // Get messages where user is receiver, sender, or target of announcement
-    const [received, sent] = await Promise.all([
-        Message.query('receiverId').eq(userId).using('ReceiverIndex').exec(),
-        Message.query('senderId').eq(userId).using('SenderIndex').exec()
+    const [received, sent, relevantAnnouncements] = await Promise.all([
+        this.find({ receiverId: userId }),
+        this.find({ senderId: userId }),
+        this.find({
+            type: 'ANNOUNCEMENT',
+            receiverRole: { $in: [userRole, 'ALL'] }
+        })
     ]);
-
-    // Also get announcements for user's role
-    const announcements = await Message.scan()
-        .where('type').eq('ANNOUNCEMENT')
-        .exec();
-
-    const relevantAnnouncements = announcements.filter(
-        a => a.receiverRole === userRole || a.receiverRole === 'ALL'
-    );
 
     // Merge, deduplicate by ID, and sort by createdAt desc
     const map = new Map();
@@ -80,11 +75,13 @@ Message.findForUser = async function (userId, userRole) {
     );
 };
 
-Message.countUnread = async function (userId, userRole) {
-    const messages = await Message.findForUser(userId, userRole);
+messageSchema.statics.countUnread = async function (userId, userRole) {
+    const messages = await this.findForUser(userId, userRole);
     return messages.filter(m =>
         m.senderId !== userId && !(m.readBy || []).includes(userId)
     ).length;
 };
+
+const Message = mongoose.model('Message', messageSchema);
 
 module.exports = Message;

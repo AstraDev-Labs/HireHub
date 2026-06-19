@@ -1,21 +1,21 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const submissionSchema = new dynamoose.Schema({
+const submissionSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     challengeId: {
         type: String,
         required: true,
-        index: { name: 'ChallengeSubmissionIndex', type: 'global' }
+        index: true
     },
     studentId: {
         type: String,
         required: true,
-        index: { name: 'StudentSubmissionIndex', type: 'global' }
+        index: true
     },
     language: {
         type: String,
@@ -31,37 +31,29 @@ const submissionSchema = new dynamoose.Schema({
         default: 'Pending'
     },
     executionResult: {
-        type: Object,
-        schema: {
-            stdout: String,
-            stderr: String,
-            compile_output: String,
-            time: Number,
-            memory: Number,
-            status_id: Number
-        }
+        stdout: String,
+        stderr: String,
+        compile_output: String,
+        time: Number,
+        memory: Number,
+        status_id: Number
     }
 }, {
     timestamps: true
 });
 
-const Submission = dynamoose.model('Submission', submissionSchema);
-
-Submission.findById = async function (id) {
-    try { return await Submission.get(id); } catch { return null; }
+submissionSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-Submission.findAll = async function (filter = {}) {
-    let scan = Submission.scan();
-    for (const [key, value] of Object.entries(filter)) {
-        scan = scan.where(key).eq(value);
-    }
-    return scan.exec();
+submissionSchema.statics.findAll = async function (filter = {}) {
+    return this.find(filter);
 };
 
-Submission.countAll = async function () {
-    const results = await Submission.scan().exec();
-    return results.length;
+submissionSchema.statics.countAll = async function () {
+    return this.countDocuments();
 };
+
+const Submission = mongoose.model('Submission', submissionSchema);
 
 module.exports = Submission;

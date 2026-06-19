@@ -43,7 +43,7 @@ exports.createCompany = catchAsync(async (req, res, next) => {
     res.status(201).json({ status: 'success', data: { company: obj } });
 });
 
-exports.getAllCompanies = catchAsync(async (req, res) => {
+exports.getAllCompanies = catchAsync(async (req, res, next) => {
     const result = await getOrSetCached('companies:all', 60000, async () => {
         const companies = await Company.findAll();
         return companies.map((company) => {
@@ -68,7 +68,7 @@ exports.updateCompany = catchAsync(async (req, res, next) => {
     const existing = await Company.findById(req.params.id);
     if (!existing) return next(new AppError('No company found with that ID', 404));
 
-    await Company.update({ id: req.params.id }, req.body);
+    await Company.updateOne({ id: req.params.id }, req.body);
     invalidateCompanyCache(req.params.id);
 
     const company = await Company.findById(req.params.id);
@@ -107,7 +107,7 @@ exports.updateCompanyProfile = catchAsync(async (req, res, next) => {
         return next(new AppError('Minimum CGPA must be between 0 and 10.', 400));
     }
 
-    await Company.update({ id: req.user.companyId }, req.body);
+    await Company.updateOne({ id: req.user.companyId }, req.body);
     invalidateCompanyCache(req.user.companyId);
 
     const updatedCompany = await Company.findById(req.user.companyId);
@@ -163,7 +163,7 @@ exports.updateRound = catchAsync(async (req, res, next) => {
         return next(new AppError('You do not have permission to update this round', 403));
     }
 
-    await Round.update({ id: req.params.id }, req.body);
+    await Round.updateOne({ id: req.params.id }, req.body);
     invalidateCompanyCache(round.companyId);
 
     const updated = await Round.findById(req.params.id);
@@ -181,7 +181,7 @@ exports.deleteRound = catchAsync(async (req, res, next) => {
         return next(new AppError('Permission denied to delete this round', 403));
     }
 
-    await Round.delete({ id: req.params.id });
+    await Round.deleteOne({ id: req.params.id });
     invalidateCompanyCache(round.companyId);
 
     res.status(204).json({ status: 'success', data: null });
@@ -220,7 +220,7 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
 
             const existing = await StudentPlacementStatus.findOne({ studentId: studentDoc.id, roundId, companyId: req.user.companyId });
             if (existing) {
-                await StudentPlacementStatus.update({ id: existing.id }, { status: 'CLEARED' });
+                await StudentPlacementStatus.updateOne({ id: existing.id }, { status: 'CLEARED' });
             }
             await StudentPlacementStatus.create({
                 studentId: studentDoc.id,
@@ -234,16 +234,16 @@ exports.evaluateCandidates = catchAsync(async (req, res, next) => {
         } else if (action === 'REJECT') {
             const existing = await StudentPlacementStatus.findOne({ studentId: studentDoc.id, roundId, companyId: req.user.companyId });
             if (existing) {
-                await StudentPlacementStatus.update({ id: existing.id }, { status: 'REJECTED' });
+                await StudentPlacementStatus.updateOne({ id: existing.id }, { status: 'REJECTED' });
             }
             emailSubject = `Update on your application at ${company.name}`;
             emailMessage = `Dear ${studentUser.fullName},\n\nThank you for your interest in ${company.name}. We regret to inform you that you have not cleared ${round.roundType}.\n\nWe wish you the best for your future endeavors.\n\nBest,\n${company.name}`;
         } else if (action === 'OFFER') {
             const existing = await StudentPlacementStatus.findOne({ studentId: studentDoc.id, roundId, companyId: req.user.companyId });
             if (existing) {
-                await StudentPlacementStatus.update({ id: existing.id }, { status: 'PLACED' });
+                await StudentPlacementStatus.updateOne({ id: existing.id }, { status: 'PLACED' });
             }
-            await Student.update({ id: studentDoc.id }, { placementStatus: 'PLACED' });
+            await Student.updateOne({ id: studentDoc.id }, { placementStatus: 'PLACED' });
             emailSubject = `Congratulations! Job Offer from ${company.name}`;
             emailMessage = `Dear ${studentUser.fullName},\n\nWe are thrilled to offer you the position at ${company.name}!\n\nYou have successfully cleared all rounds.\n\nBest,\n${company.name} HR Team`;
         }

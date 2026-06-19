@@ -10,7 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const sendEmail = require('../utils/sendEmail');
 const { logAction } = require('../utils/auditLogger');
 
-exports.createInterviewSlots = catchAsync(async (req, res) => {
+exports.createInterviewSlots = catchAsync(async (req, res, next) => {
     // Companies can create slots
     const { driveId, roundId, slots } = req.body;
     // slots should be array of { studentId, scheduledAt, durationMinutes, meetLink }
@@ -113,7 +113,7 @@ exports.createInterviewSlots = catchAsync(async (req, res) => {
     });
 });
 
-exports.getCompanyInterviews = catchAsync(async (req, res) => {
+exports.getCompanyInterviews = catchAsync(async (req, res, next) => {
     let companyId = req.user.companyId;
 
     if (!companyId && (req.user.role === 'ADMIN' || req.user.role === 'STAFF')) {
@@ -136,8 +136,13 @@ exports.getCompanyInterviews = catchAsync(async (req, res) => {
     });
 });
 
-exports.getStudentInterviews = catchAsync(async (req, res) => {
-    const student = await Student.findByUserId(req.user._id);
+exports.getStudentInterviews = catchAsync(async (req, res, next) => {
+    let targetUserId = req.user._id || req.user.id;
+    if (req.user.role === 'PARENT' && req.user.linkedStudentId) {
+        targetUserId = req.user.linkedStudentId;
+    }
+
+    const student = await Student.findByUserId(targetUserId);
     if (!student) return next(new AppError('Student profile not found.', 404));
 
     const interviews = await InterviewSlot.findByStudentId(student.id);
@@ -153,9 +158,9 @@ exports.getStudentInterviews = catchAsync(async (req, res) => {
     });
 });
 
-exports.getAllInterviews = catchAsync(async (req, res) => {
+exports.getAllInterviews = catchAsync(async (req, res, next) => {
     // Only Admin/Staff can use this
-    const interviews = await InterviewSlot.scan().exec();
+    const interviews = await InterviewSlot.find();
 
     interviews.sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
 
@@ -168,7 +173,7 @@ exports.getAllInterviews = catchAsync(async (req, res) => {
     });
 });
 
-exports.updateInterviewStatus = catchAsync(async (req, res) => {
+exports.updateInterviewStatus = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const { status, feedback } = req.body;
 
@@ -198,7 +203,7 @@ exports.updateInterviewStatus = catchAsync(async (req, res) => {
     });
 });
 
-exports.deleteInterview = catchAsync(async (req, res) => {
+exports.deleteInterview = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const interview = await InterviewSlot.findById(id);
 
@@ -210,7 +215,7 @@ exports.deleteInterview = catchAsync(async (req, res) => {
         return next(new AppError('You do not have permission to delete this interview.', 403));
     }
 
-    await InterviewSlot.delete({ id: interview.id });
+    await InterviewSlot.deleteOne({ id: interview.id });
 
     // Audit Logging
     await logAction(req, 'DELETE', 'Interview', interview.id, `Deleted interview for ${interview.studentName} with ${interview.companyName}`);

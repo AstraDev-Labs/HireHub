@@ -1,21 +1,21 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const placementStatusSchema = new dynamoose.Schema({
+const placementStatusSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: () => uuidv4(),
+        index: true
     },
     studentId: {
         type: String,
         required: true,
-        index: { name: 'StudentPlacementIndex', type: 'global' }
+        index: true
     },
     companyId: {
         type: String,
         required: true,
-        index: { name: 'CompanyPlacementIndex', type: 'global' }
+        index: true
     },
     roundId: {
         type: String,
@@ -31,41 +31,38 @@ const placementStatusSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const StudentPlacementStatus = dynamoose.model('StudentPlacementStatus', placementStatusSchema);
-
 // --- Static Methods ---
 
-StudentPlacementStatus.findById = async function (id) {
-    try { return await StudentPlacementStatus.get(id); } catch { return null; }
+placementStatusSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-StudentPlacementStatus.findByStudentId = async function (studentId) {
-    return StudentPlacementStatus.query('studentId').eq(studentId).using('StudentPlacementIndex').exec();
+placementStatusSchema.statics.findByStudentId = async function (studentId) {
+    return this.find({ studentId });
 };
 
-StudentPlacementStatus.findByCompanyId = async function (companyId) {
-    return StudentPlacementStatus.query('companyId').eq(companyId).using('CompanyPlacementIndex').exec();
+placementStatusSchema.statics.findByCompanyId = async function (companyId) {
+    return this.find({ companyId });
 };
 
-StudentPlacementStatus.findByFilter = async function (filter = {}) {
-    let scan = StudentPlacementStatus.scan();
-    for (const [key, value] of Object.entries(filter)) {
-        if (typeof value === 'object' && value.$ne !== undefined) {
-            scan = scan.where(key).not().eq(value.$ne);
-        } else {
-            scan = scan.where(key).eq(value);
-        }
-    }
-    return scan.exec();
+placementStatusSchema.statics.findByFilter = async function (filter = {}) {
+    return this.find(filter);
 };
 
-StudentPlacementStatus.findOne = async function (filter) {
-    const results = await StudentPlacementStatus.findByFilter(filter);
-    return results.length > 0 ? results[0] : null;
+// Mongoose provides a built-in findOne that works perfectly for their use case
+// The old dynamoose model manually defined findOne.
+// If explicitly needed for backward compatibility in case they call it passing identical arguments:
+placementStatusSchema.statics.customFindOne = async function (filter) {
+    return this.findOne(filter);
 };
 
-StudentPlacementStatus.findAll = async function () {
-    return StudentPlacementStatus.scan().exec();
+placementStatusSchema.statics.findAll = async function () {
+    return this.find();
 };
+
+const StudentPlacementStatus = mongoose.model('StudentPlacementStatus', placementStatusSchema);
+
+// Override the Mongoose findOne only if it doesn't conflict, but we just let Mongoose's findOne be used directly
+// since Mongoose model instance inherently gets `findOne` from mongoose.Model.
 
 module.exports = StudentPlacementStatus;

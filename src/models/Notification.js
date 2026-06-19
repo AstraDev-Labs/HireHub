@@ -1,16 +1,16 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const notificationSchema = new dynamoose.Schema({
+const notificationSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     userId: {
         type: String,
         required: true,
-        index: { name: 'UserNotificationIndex', type: 'global' }
+        index: true
     },
     type: {
         type: String,
@@ -25,28 +25,24 @@ const notificationSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const Notification = dynamoose.model('Notification', notificationSchema);
-
-Notification.findByUserId = async function (userId) {
-    return Notification.query('userId').eq(userId).using('UserNotificationIndex').exec();
+notificationSchema.statics.findByUserId = async function (userId) {
+    return this.find({ userId });
 };
 
-Notification.findById = async function (id) {
-    try { return await Notification.get(id); } catch { return null; }
+notificationSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
 // Create a notification
-Notification.createNotification = async function ({ userId, type, title, message, link }) {
-    return Notification.create({ userId, type, title, message, link });
+notificationSchema.statics.createNotification = async function ({ userId, type, title, message, link }) {
+    return this.create({ userId, type, title, message, link });
 };
 
 // Create notifications for multiple users
-Notification.createBulk = async function (notifications) {
-    const results = [];
-    for (const n of notifications) {
-        results.push(await Notification.create(n));
-    }
-    return results;
+notificationSchema.statics.createBulk = async function (notifications) {
+    return this.insertMany(notifications);
 };
+
+const Notification = mongoose.model('Notification', notificationSchema);
 
 module.exports = Notification;

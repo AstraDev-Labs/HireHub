@@ -2,7 +2,7 @@ const Department = require('../models/Department');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 
-exports.getAllDepartments = catchAsync(async (req, res) => {
+exports.getAllDepartments = catchAsync(async (req, res, next) => {
     const departments = await Department.findAll();
     const result = departments.map(d => {
         const obj = typeof d.toJSON === 'function' ? d.toJSON() : { ...d };
@@ -17,7 +17,7 @@ exports.getAllDepartments = catchAsync(async (req, res) => {
     });
 });
 
-exports.createDepartment = catchAsync(async (req, res) => {
+exports.createDepartment = catchAsync(async (req, res, next) => {
     // Uppercase name and code
     if (req.body.name) req.body.name = req.body.name.toUpperCase().trim();
     if (req.body.code) req.body.code = req.body.code.toUpperCase().trim();
@@ -29,14 +29,14 @@ exports.createDepartment = catchAsync(async (req, res) => {
     res.status(201).json({ status: 'success', data: { department: obj } });
 });
 
-exports.updateDepartment = catchAsync(async (req, res) => {
+exports.updateDepartment = catchAsync(async (req, res, next) => {
     const existing = await Department.findById(req.params.id);
     if (!existing) return next(new AppError('No department found with that ID', 404));
 
     if (req.body.name) req.body.name = req.body.name.toUpperCase().trim();
     if (req.body.code) req.body.code = req.body.code.toUpperCase().trim();
 
-    await Department.update({ id: req.params.id }, req.body);
+    await Department.updateOne({ id: req.params.id }, req.body);
     const department = await Department.findById(req.params.id);
     const obj = typeof department.toJSON === 'function' ? department.toJSON() : { ...department };
     obj._id = obj.id;
@@ -44,11 +44,11 @@ exports.updateDepartment = catchAsync(async (req, res) => {
     res.status(200).json({ status: 'success', data: { department: obj } });
 });
 
-exports.deleteDepartment = catchAsync(async (req, res) => {
+exports.deleteDepartment = catchAsync(async (req, res, next) => {
     const department = await Department.findById(req.params.id);
     if (!department) return next(new AppError('No department found with that ID', 404));
 
-    await Department.delete({ id: req.params.id });
+    await Department.deleteOne({ id: req.params.id });
     res.status(204).json({ status: 'success', data: null });
 });
 

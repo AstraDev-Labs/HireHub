@@ -4,7 +4,7 @@ const Student = require('../models/Student');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 
-exports.getMessages = catchAsync(async (req, res) => {
+exports.getMessages = catchAsync(async (req, res, next) => {
     const userId = req.user._id;
     const userRole = req.user.role;
 
@@ -34,7 +34,7 @@ exports.getMessages = catchAsync(async (req, res) => {
     });
 });
 
-exports.sendMessage = catchAsync(async (req, res) => {
+exports.sendMessage = catchAsync(async (req, res, next) => {
     const { receiverId, subject, content, type, receiverRole, attachments, isEncrypted } = req.body;
 
     if (!content && (!attachments || attachments.length === 0)) {
@@ -95,14 +95,14 @@ exports.sendMessage = catchAsync(async (req, res) => {
     res.status(201).json({ status: 'success', data: { message: obj } });
 });
 
-exports.markAsRead = catchAsync(async (req, res) => {
+exports.markAsRead = catchAsync(async (req, res, next) => {
     const message = await Message.findById(req.params.id);
     if (!message) return next(new AppError('Message not found', 404));
 
     const readBy = message.readBy || [];
     if (!readBy.includes(req.user._id)) {
         readBy.push(req.user._id);
-        await Message.update({ id: message.id }, { readBy });
+        await Message.updateOne({ id: message.id }, { readBy });
     }
 
     const updated = await Message.findById(req.params.id);
@@ -112,7 +112,7 @@ exports.markAsRead = catchAsync(async (req, res) => {
     res.status(200).json({ status: 'success', data: { message: obj } });
 });
 
-exports.getContacts = catchAsync(async (req, res) => {
+exports.getContacts = catchAsync(async (req, res, next) => {
     const { query } = req.query;
 
     let users = await User.findAll({ isActive: true, approvalStatus: 'APPROVED' });
@@ -151,7 +151,7 @@ exports.getContacts = catchAsync(async (req, res) => {
     res.status(200).json({ status: 'success', results: result.length, data: { users: result } });
 });
 
-exports.markThreadAsRead = catchAsync(async (req, res) => {
+exports.markThreadAsRead = catchAsync(async (req, res, next) => {
     const { otherUserId, subject, type } = req.body;
     const userId = req.user._id;
     const baseSubject = (subject || '').replace(/^Re:\s*/i, '');
@@ -177,14 +177,14 @@ exports.markThreadAsRead = catchAsync(async (req, res) => {
         const readBy = msg.readBy || [];
         if (!readBy.includes(userId)) {
             readBy.push(userId);
-            await Message.update({ id: msg.id }, { readBy });
+            await Message.updateOne({ id: msg.id }, { readBy });
         }
     }
 
     res.status(200).json({ status: 'success' });
 });
 
-exports.getUnreadCount = catchAsync(async (req, res) => {
+exports.getUnreadCount = catchAsync(async (req, res, next) => {
     const count = await Message.countUnread(req.user._id, req.user.role);
 
     res.status(200).json({ status: 'success', data: { count } });

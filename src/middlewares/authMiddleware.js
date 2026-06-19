@@ -26,7 +26,16 @@ exports.protect = catchAsync(async (req, res, next) => {
         return next(new AppError('Invalid token. Please log in again!', 401));
     }
 
-    const currentUser = await User.findById(decoded.id);
+    let currentUser;
+    try {
+        currentUser = await User.findById(decoded.id);
+    } catch (err) {
+        if (err.name === 'CastError') {
+            return next(new AppError('Invalid token format. Please log in again!', 401));
+        }
+        return next(err);
+    }
+
     if (!currentUser) {
         return next(new AppError('The user belonging to this token no longer exists.', 401));
     }

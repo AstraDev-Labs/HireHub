@@ -9,7 +9,7 @@ const Message = require('../models/Message');
 
 // --- Application Approval ---
 
-exports.getAllApplications = catchAsync(async (req, res) => {
+exports.getAllApplications = catchAsync(async (req, res, next) => {
     try {
         const filter = {};
         if (req.query.status) filter.status = req.query.status;
@@ -47,7 +47,7 @@ exports.getAllApplications = catchAsync(async (req, res) => {
     }
 });
 
-exports.approveApplication = catchAsync(async (req, res) => {
+exports.approveApplication = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
 
@@ -58,7 +58,7 @@ exports.approveApplication = catchAsync(async (req, res) => {
     const existing = await StudentPlacementStatus.findById(id);
     if (!existing) return next(new AppError('Application not found', 404));
 
-    await StudentPlacementStatus.update({ id }, { status });
+    await StudentPlacementStatus.updateOne({ id }, { status });
     const application = await StudentPlacementStatus.findById(id);
     const obj = typeof application.toJSON === 'function' ? application.toJSON() : { ...application };
     obj._id = obj.id;
@@ -68,7 +68,7 @@ exports.approveApplication = catchAsync(async (req, res) => {
 
 // --- Legacy Placement Logic ---
 
-exports.updatePlacementStatus = catchAsync(async (req, res) => {
+exports.updatePlacementStatus = catchAsync(async (req, res, next) => {
     const { studentId, companyId, roundId, status } = req.body;
 
     let placement = await StudentPlacementStatus.findOne({ studentId, companyId, roundId });
@@ -82,7 +82,7 @@ exports.updatePlacementStatus = catchAsync(async (req, res) => {
             updatedBy: req.user._id
         });
     } else {
-        await StudentPlacementStatus.update({ id: placement.id }, { status, updatedBy: req.user._id });
+        await StudentPlacementStatus.updateOne({ id: placement.id }, { status, updatedBy: req.user._id });
         placement = await StudentPlacementStatus.findById(placement.id);
     }
 
@@ -119,7 +119,7 @@ exports.updatePlacementStatus = catchAsync(async (req, res) => {
     res.status(200).json({ status: 'success', data: { placement: obj } });
 });
 
-exports.getStudentPlacementStatus = catchAsync(async (req, res) => {
+exports.getStudentPlacementStatus = catchAsync(async (req, res, next) => {
     const studentId = req.params.studentId;
 
     if (req.user.role === 'STUDENT') {

@@ -1,16 +1,45 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const studentSchema = new dynamoose.Schema({
+const studentEducationSchema = new mongoose.Schema({
+    id: { type: String, default: uuidv4 },
+    institution: { type: String, required: true },
+    degree: { type: String, required: true },
+    fieldOfStudy: String,
+    startDate: String,
+    endDate: String,
+    grade: String
+}, { _id: false });
+
+const studentExperienceSchema = new mongoose.Schema({
+    id: { type: String, default: uuidv4 },
+    title: { type: String, required: true },
+    company: { type: String, required: true },
+    location: String,
+    startDate: String,
+    endDate: String,
+    current: { type: Boolean, default: false },
+    description: String
+}, { _id: false });
+
+const studentProjectSchema = new mongoose.Schema({
+    id: { type: String, default: uuidv4 },
+    title: { type: String, required: true },
+    description: String,
+    link: String,
+    technologies: [String]
+}, { _id: false });
+
+const studentSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: uuidv4,
+        index: true
     },
     userId: {
         type: String,
         required: true,
-        index: { name: 'UserIdIndex', type: 'global' }
+        index: true
     },
     name: {
         type: String,
@@ -19,7 +48,7 @@ const studentSchema = new dynamoose.Schema({
     email: {
         type: String,
         required: true,
-        index: { name: 'StudentEmailIndex', type: 'global' }
+        index: true
     },
     phone: {
         type: String,
@@ -42,103 +71,57 @@ const studentSchema = new dynamoose.Schema({
         enum: ['PLACED', 'NOT_PLACED'],
         default: 'NOT_PLACED'
     },
-    // --- Resume Builder Fields ---
     skills: {
-        type: Array,
-        schema: [String],
+        type: [String],
         default: []
     },
     education: {
-        type: Array,
-        schema: [{
-            type: Object,
-            schema: {
-                id: { type: String, default: () => uuidv4() },
-                institution: { type: String, required: true },
-                degree: { type: String, required: true },
-                fieldOfStudy: String,
-                startDate: String,
-                endDate: String,
-                grade: String
-            }
-        }],
+        type: [studentEducationSchema],
         default: []
     },
     experience: {
-        type: Array,
-        schema: [{
-            type: Object,
-            schema: {
-                id: { type: String, default: () => uuidv4() },
-                title: { type: String, required: true },
-                company: { type: String, required: true },
-                location: String,
-                startDate: String,
-                endDate: String,
-                current: { type: Boolean, default: false },
-                description: String
-            }
-        }],
+        type: [studentExperienceSchema],
         default: []
     },
     projects: {
-        type: Array,
-        schema: [{
-            type: Object,
-            schema: {
-                id: { type: String, default: () => uuidv4() },
-                title: { type: String, required: true },
-                description: String,
-                link: String,
-                technologies: { type: Array, schema: [String] }
-            }
-        }],
+        type: [studentProjectSchema],
         default: []
     },
     resumeLink: {
-        type: String // A pre-existing uploaded PDF, if any
+        type: String
     },
     socialLinks: {
-        type: Object,
-        schema: {
-            github: String,
-            linkedin: String,
-            portfolio: String
-        },
-        default: {}
+        github: String,
+        linkedin: String,
+        portfolio: String
     }
 }, {
     timestamps: true
 });
 
-const Student = dynamoose.model('Student', studentSchema);
-
 // --- Static Methods ---
 
-Student.findById = async function (id) {
-    try { return await Student.get(id); } catch { return null; }
+studentSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-Student.findByUserId = async function (userId) {
-    const results = await Student.query('userId').eq(userId).using('UserIdIndex').exec();
-    return results.length > 0 ? results[0] : null;
+studentSchema.statics.findByUserId = async function (userId) {
+    return this.findOne({ userId });
 };
 
-Student.findAll = async function (filter = {}) {
-    let scan = Student.scan();
-    for (const [key, value] of Object.entries(filter)) {
-        scan = scan.where(key).eq(value);
-    }
-    return scan.exec();
+studentSchema.statics.findAll = async function (filter = {}) {
+    return this.find(filter);
 };
 
-Student.countAll = async function (filter = {}) {
-    const results = await Student.findAll(filter);
-    return results.length;
+studentSchema.statics.countAll = async function (filter = {}) {
+    return this.countDocuments(filter);
 };
 
-Student.searchByName = async function (query) {
-    return Student.scan().where('name').contains(query).attributes(['name', 'email', 'department', 'batchYear', 'phone', 'id']).exec();
+studentSchema.statics.searchByName = async function (query) {
+    return this.find({ name: { $regex: query, $options: 'i' } })
+        .select('name email department batchYear phone id');
 };
+
+const Student = mongoose.model('Student', studentSchema);
 
 module.exports = Student;

@@ -36,7 +36,7 @@ exports.applyToDrive = catchAsync(async (req, res, next) => {
     if (existing) {
         if (existing.status === 'WITHDRAWN') {
             // Re-apply
-            await DriveApplication.update({ id: existing.id }, { status: 'APPLIED' });
+            await DriveApplication.updateOne({ id: existing.id }, { status: 'APPLIED' });
             return res.status(200).json({ status: 'success', message: 'Application re-submitted successfully' });
         }
         return next(new AppError('You have already applied to this drive', 400));
@@ -93,7 +93,7 @@ exports.withdrawApplication = catchAsync(async (req, res, next) => {
         return next(new AppError('Not authorized to withdraw this application', 403));
     }
 
-    await DriveApplication.update({ id: application.id }, { status: 'WITHDRAWN' });
+    await DriveApplication.updateOne({ id: application.id }, { status: 'WITHDRAWN' });
 
     res.status(200).json({ status: 'success', message: 'Application withdrawn successfully' });
 });
@@ -153,7 +153,7 @@ exports.updateApplicationStatus = catchAsync(async (req, res, next) => {
         return next(new AppError('Not authorized to update this application', 403));
     }
 
-    await DriveApplication.update({ id: application.id }, { status });
+    await DriveApplication.updateOne({ id: application.id }, { status });
 
     // If shortlisted, automatically add them to the first round of the company's hiring process (StudentPlacementStatus)
     if (status === 'SHORTLISTED') {
@@ -175,7 +175,7 @@ exports.updateApplicationStatus = catchAsync(async (req, res, next) => {
                     status: 'PENDING'
                 });
             } else if (existingPlacement.status === 'PENDING_APPROVAL') {
-                await StudentPlacementStatus.update({ id: existingPlacement.id }, { status: 'PENDING' });
+                await StudentPlacementStatus.updateOne({ id: existingPlacement.id }, { status: 'PENDING' });
             }
         }
     }

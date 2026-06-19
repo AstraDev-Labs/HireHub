@@ -8,8 +8,7 @@ router.use(protect);
 router.post('/schedule', restrictTo('COMPANY', 'ADMIN', 'STAFF'), interviewController.createInterviewSlots);
 
 router.get('/company', restrictTo('COMPANY', 'ADMIN', 'STAFF'), interviewController.getCompanyInterviews);
-
-router.get('/student', restrictTo('STUDENT'), interviewController.getStudentInterviews);
+router.get('/student', restrictTo('STUDENT', 'PARENT'), interviewController.getStudentInterviews);
 
 router.get('/all', restrictTo('ADMIN', 'STAFF'), interviewController.getAllInterviews);
 

@@ -11,10 +11,6 @@ const requiredVars = [
 ];
 
 const optionalButWarned = [
-    'AWS_ACCESS_KEY_ID',
-    'AWS_SECRET_ACCESS_KEY',
-    'AWS_S3_BUCKET_NAME',
-    'AWS_REGION',
     'EMAIL_USERNAME',
     'EMAIL_PASSWORD',
     'EMAIL_HOST',

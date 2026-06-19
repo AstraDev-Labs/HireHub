@@ -61,14 +61,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setUser(userData);
                 localStorage.setItem('user', JSON.stringify(userData));
             } catch (err: any) {
-                console.error('Initial session check failed:', err);
-
                 // If it's a 401 or 403, we definitely don't have a valid session
                 if (err.response?.status === 401 || err.response?.status === 403) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                     setUser(null);
                 } else {
+                    console.error('Initial session check failed:', err);
                     const storedUser = localStorage.getItem('user');
                     if (storedUser && hasToken) {
                         setUser(JSON.parse(storedUser));

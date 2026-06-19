@@ -46,13 +46,13 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             label: 'Companies',
             icon: Building2,
             href: '/companies',
-            roles: ['ADMIN', 'STAFF', 'STUDENT', 'COMPANY'],
+            roles: ['ADMIN', 'STAFF', 'STUDENT', 'COMPANY', 'PARENT'],
         },
         {
             label: 'My Profile',
             icon: UserCircle,
             href: '/profile',
-            roles: ['ADMIN', 'STAFF', 'STUDENT', 'COMPANY'],
+            roles: ['ADMIN', 'STAFF', 'STUDENT', 'COMPANY', 'PARENT'],
         },
         {
             label: 'Resources',
@@ -64,7 +64,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             label: 'Messages',
             icon: MessageSquare,
             href: '/messages',
-            roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
+            roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT', 'PARENT'],
         },
         {
             label: 'Notifications',
@@ -76,7 +76,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             label: 'Offer Letters',
             icon: FileText,
             href: '/offers',
-            roles: ['ADMIN', 'STAFF', 'STUDENT'],
+            roles: ['ADMIN', 'STAFF', 'STUDENT', 'PARENT'],
         },
         {
             label: 'Resume Builder',
@@ -100,13 +100,13 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             label: 'Drives & Events',
             icon: Building2,
             href: '/drives',
-            roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT'],
+            roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT', 'PARENT'],
         },
         {
             label: 'Coding Challenges',
             icon: Code2,
             href: '/challenges',
-            roles: ['ADMIN', 'STAFF', 'STUDENT'],
+            roles: ['ADMIN', 'STAFF', 'STUDENT', 'PARENT'],
         },
         {
             label: 'Reports',

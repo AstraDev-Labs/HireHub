@@ -7,7 +7,7 @@ const AppError = require('../utils/AppError');
 const { logAction } = require('../utils/auditLogger');
 const sanitizeUser = require('../utils/sanitizeUser');
 
-exports.getPendingUsers = catchAsync(async (req, res) => {
+exports.getPendingUsers = catchAsync(async (req, res, next) => {
     let users = await User.findByApprovalStatus('PENDING');
 
     // Filter out ADMINs
@@ -52,7 +52,7 @@ exports.getPendingUsers = catchAsync(async (req, res) => {
     });
 });
 
-exports.approveUser = catchAsync(async (req, res) => {
+exports.approveUser = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -80,7 +80,7 @@ exports.approveUser = catchAsync(async (req, res) => {
         }
     }
 
-    await User.update({ id: user.id }, { approvalStatus: 'APPROVED' });
+    await User.updateOne({ _id: user._id }, { approvalStatus: 'APPROVED' });
 
     // Trigger notification
     await Notification.createNotification({
@@ -104,7 +104,7 @@ exports.approveUser = catchAsync(async (req, res) => {
     });
 });
 
-exports.rejectUser = catchAsync(async (req, res) => {
+exports.rejectUser = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -142,17 +142,17 @@ exports.rejectUser = catchAsync(async (req, res) => {
     if (user.role === 'STUDENT') {
         const student = await Student.findByUserId(user.id);
         if (student) {
-            await Student.delete({ id: student.id });
+            await Student.deleteOne({ userId: user._id });
         }
     } else if (user.role === 'COMPANY') {
         if (user.companyId) {
             const Company = require('../models/Company');
-            await Company.delete({ id: user.companyId });
+            await Company.deleteOne({ _id: user.companyId });
         }
     }
 
     // Delete the user
-    await User.delete({ id: user.id });
+    await User.deleteOne({ _id: user._id });
 
     res.status(200).json({
         status: 'success',
@@ -161,16 +161,16 @@ exports.rejectUser = catchAsync(async (req, res) => {
     });
 });
 
-exports.updatePublicKey = catchAsync(async (req, res) => {
+exports.updatePublicKey = catchAsync(async (req, res, next) => {
     const { publicKey } = req.body;
     if (!publicKey) return next(new AppError('Please provide a public key', 400));
 
-    await User.update({ id: req.user._id }, { publicKey });
+    await User.updateOne({ _id: req.user._id }, { publicKey });
 
     res.status(200).json({ status: 'success' });
 });
 
-exports.getUserPublicKey = catchAsync(async (req, res) => {
+exports.getUserPublicKey = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (!user) return next(new AppError('User not found', 404));
 
@@ -182,7 +182,7 @@ exports.getUserPublicKey = catchAsync(async (req, res) => {
 
 // --- Profile endpoints (all authenticated users) ---
 
-exports.getMe = catchAsync(async (req, res) => {
+exports.getMe = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.user._id);
     if (!user) return next(new AppError('User not found', 404));
 
@@ -228,7 +228,7 @@ exports.getMe = catchAsync(async (req, res) => {
     res.status(200).json({ status: 'success', data: { user: profile } });
 });
 
-exports.updateMe = catchAsync(async (req, res) => {
+exports.updateMe = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.user._id);
     if (!user) return next(new AppError('User not found', 404));
 
@@ -245,7 +245,7 @@ exports.updateMe = catchAsync(async (req, res) => {
 
     // Apply user updates
     if (Object.keys(userUpdates).length > 0) {
-        await User.update({ id: user.id }, userUpdates);
+        await User.updateOne({ _id: user._id }, userUpdates);
     }
 
     // Role-specific updates
@@ -265,7 +265,7 @@ exports.updateMe = catchAsync(async (req, res) => {
             if (req.body.fullName) studentUpdates.name = req.body.fullName;
 
             if (Object.keys(studentUpdates).length > 0) {
-                await Student.update({ id: student.id }, studentUpdates);
+                await Student.updateOne({ _id: student._id }, studentUpdates);
             }
         }
     }
@@ -292,7 +292,7 @@ exports.updateMe = catchAsync(async (req, res) => {
 });
 
 // Change Password
-exports.changePassword = catchAsync(async (req, res) => {
+exports.changePassword = catchAsync(async (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -322,7 +322,7 @@ exports.changePassword = catchAsync(async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await User.update({ id: user.id }, { password: hashedPassword });
+    await User.updateOne({ _id: user._id }, { password: hashedPassword });
 
     res.status(200).json({ status: 'success', message: 'Password changed successfully' });
 });

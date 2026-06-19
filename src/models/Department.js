@@ -1,37 +1,37 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const departmentSchema = new dynamoose.Schema({
+const departmentSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: () => uuidv4(),
+        index: true
     },
     name: {
         type: String,
         required: true,
-        index: { name: 'DeptNameIndex', type: 'global' }
+        index: true
     },
     code: {
         type: String,
         required: true,
-        index: { name: 'DeptCodeIndex', type: 'global' }
+        index: true
     }
 }, {
     timestamps: true
 });
 
-const Department = dynamoose.model('Department', departmentSchema);
-
 // --- Static Methods ---
 
-Department.findById = async function (id) {
-    try { return await Department.get(id); } catch { return null; }
+departmentSchema.statics.findById = async function (id) {
+    try { return await this.findOne({ id }); } catch { return null; }
 };
 
-Department.findAll = async function () {
-    const results = await Department.scan().exec();
+departmentSchema.statics.findAll = async function () {
+    const results = await this.find();
     return results.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 };
+
+const Department = mongoose.model('Department', departmentSchema);
 
 module.exports = Department;

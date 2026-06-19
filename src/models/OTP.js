@@ -1,16 +1,16 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const otpSchema = new dynamoose.Schema({
+const otpSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: () => uuidv4(),
+        index: true
     },
     email: {
         type: String,
         required: true,
-        index: { name: 'OTPEmailIndex', type: 'global' }
+        index: true
     },
     code: {
         type: String,
@@ -33,11 +33,9 @@ const otpSchema = new dynamoose.Schema({
     timestamps: true
 });
 
-const OTP = dynamoose.model('OTP', otpSchema);
-
 // --- Static Methods ---
 
-OTP.generate = function (length = 6) {
+otpSchema.statics.generate = function (length = 6) {
     let code = '';
     for (let i = 0; i < length; i++) {
         code += Math.floor(Math.random() * 10);
@@ -45,19 +43,19 @@ OTP.generate = function (length = 6) {
     return code;
 };
 
-OTP.createOTP = async function (email, type) {
+otpSchema.statics.createOTP = async function (email, type) {
     // Invalidate old OTPs of same type for this email
-    const existing = await OTP.query('email').eq(email.toLowerCase()).using('OTPEmailIndex').exec();
+    const existing = await this.find({ email: email.toLowerCase() });
     for (const old of existing) {
         if (old.type === type && !old.verified) {
-            await OTP.delete(old.id);
+            await this.deleteOne({ id: old.id });
         }
     }
 
-    const code = OTP.generate();
+    const code = this.generate();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-    return OTP.create({
+    return this.create({
         email: email.toLowerCase(),
         code,
         type,
@@ -65,8 +63,8 @@ OTP.createOTP = async function (email, type) {
     });
 };
 
-OTP.verifyOTP = async function (email, code, type) {
-    const results = await OTP.query('email').eq(email.toLowerCase()).using('OTPEmailIndex').exec();
+otpSchema.statics.verifyOTP = async function (email, code, type) {
+    const results = await this.find({ email: email.toLowerCase() });
     const otp = results.find(o => o.type === type && o.code === code && !o.verified);
 
     if (!otp) return { valid: false, reason: 'Invalid OTP code.' };
@@ -78,5 +76,7 @@ OTP.verifyOTP = async function (email, code, type) {
 
     return { valid: true };
 };
+
+const OTP = mongoose.model('OTP', otpSchema);
 
 module.exports = OTP;

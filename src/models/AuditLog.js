@@ -1,16 +1,17 @@
-const dynamoose = require('../config/dynamodb');
+const mongoose = require('mongoose');
+const { logsDb } = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 
-const auditLogSchema = new dynamoose.Schema({
+const auditLogSchema = new mongoose.Schema({
     id: {
         type: String,
-        hashKey: true,
-        default: () => uuidv4()
+        default: () => uuidv4(),
+        index: true
     },
     actorId: {
         type: String,
         required: true,
-        index: { name: 'ActorIndex', type: 'global' }
+        index: true
     },
     actorName: {
         type: String,
@@ -24,7 +25,7 @@ const auditLogSchema = new dynamoose.Schema({
     action: {
         type: String,
         required: true, // e.g., 'CREATE', 'UPDATE', 'DELETE'
-        index: { name: 'ActionIndex', type: 'global' }
+        index: true
     },
     resource: {
         type: String,
@@ -35,18 +36,14 @@ const auditLogSchema = new dynamoose.Schema({
 }, {
     timestamps: {
         createdAt: 'timestamp',
-        updatedAt: null
+        updatedAt: false
     }
 });
 
-const AuditLog = dynamoose.model('AuditLog', auditLogSchema);
-
-AuditLog.findAll = async function (filter = {}) {
-    let scan = AuditLog.scan();
-    for (const [key, value] of Object.entries(filter)) {
-        scan = scan.where(key).eq(value);
-    }
-    return scan.exec();
+auditLogSchema.statics.findAll = async function (filter = {}) {
+    return this.find(filter);
 };
+
+const AuditLog = logsDb.model('AuditLog', auditLogSchema);
 
 module.exports = AuditLog;

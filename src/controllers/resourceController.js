@@ -6,7 +6,7 @@ const AppError = require('../utils/AppError');
 
 const auditLogger = require('../utils/auditLogger');
 
-exports.uploadResource = catchAsync(async (req, res) => {
+exports.uploadResource = catchAsync(async (req, res, next) => {
     if (req.user.role === 'COMPANY' && req.body.companyId !== req.user.companyId) {
         return next(new AppError('You can only upload resources for your own company.', 403));
     }
@@ -23,7 +23,7 @@ exports.uploadResource = catchAsync(async (req, res) => {
     res.status(201).json({ status: 'success', data: { resource: obj } });
 });
 
-exports.getResources = catchAsync(async (req, res) => {
+exports.getResources = catchAsync(async (req, res, next) => {
     const filter = {};
     if (req.query.companyId) filter.companyId = req.query.companyId;
     if (req.query.roundId) filter.roundId = req.query.roundId;
@@ -49,11 +49,7 @@ exports.getResources = catchAsync(async (req, res) => {
 
     res.status(200).json({ status: 'success', results: result.length, data: { resources: result } });
 });
-
-const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const s3 = require('../config/s3Config');
-
-exports.deleteResource = catchAsync(async (req, res) => {
+exports.deleteResource = catchAsync(async (req, res, next) => {
     const resource = await PrepResource.findById(req.params.id);
     if (!resource) return next(new AppError('No resource found with that ID', 404));
 
@@ -61,39 +57,49 @@ exports.deleteResource = catchAsync(async (req, res) => {
         return next(new AppError('You can only delete resources for your own company.', 403));
     }
 
-    // Attempt to delete from S3 if it's an internal upload
-    if (resource.driveLink) {
+    if (resource.driveLink && resource.driveLink.includes('blob.core.windows.net')) {
         try {
-            const parsedUrl = new URL(resource.driveLink);
-            // Harden S3 hostname check to prevent 'evil-domain.com.amazonaws.com' bypass
-            const bucketName = process.env.AWS_S3_BUCKET_NAME;
-            const isS3 = parsedUrl.hostname === 's3.amazonaws.com' || 
-                         parsedUrl.hostname === `${bucketName}.s3.amazonaws.com` ||
-                         /^s3\.[a-z0-9-]+\.amazonaws\.com$/.test(parsedUrl.hostname) ||
-                         new RegExp(`^${bucketName}\\.s3\\.[a-z0-9-]+\\.amazonaws\\.com$`).test(parsedUrl.hostname);
-            
-            const isInternal = parsedUrl.pathname.includes('/attachments/');
-
-            if (isS3 && isInternal) {
-                const key = parsedUrl.pathname.substring(1); // Remove leading slash
-                await s3.send(new DeleteObjectCommand({
-                    Bucket: process.env.AWS_S3_BUCKET_NAME,
-                    Key: key
-                }));
-                console.log(`🗑️ S3 Object Deleted: ${key}`);
+            const { containerClient } = require('../config/azureConfig');
+            if (containerClient) {
+                const urlParts = resource.driveLink.split('/');
+                const blobName = urlParts[urlParts.length - 1];
+                const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+                
+                await blockBlobClient.deleteIfExists();
+                console.log(`🗑️ Azure Blob Deleted: ${blobName}`);
             }
         } catch (err) {
-            // If it's not a valid URL or S3 deletion fails, we log it and continue
-            if (err.code !== 'ERR_INVALID_URL') {
-                console.error('⚠️ S3 Cleanup Failed:', err.message);
-            }
+            console.error('⚠️ Azure Cleanup Failed:', err.message);
+        }
+    } else if (resource.driveLink && resource.driveLink.includes('res.cloudinary.com')) {
+        // Fallback for legacy Cloudinary links if they exist
+        try {
+            const { cloudinary } = require('../config/cloudinaryConfig');
+            const urlParts = resource.driveLink.split('/');
+            const fileWithExt = urlParts[urlParts.length - 1];
+            let resType = 'image';
+            
+            if (resource.driveLink.includes('/raw/upload/')) resType = 'raw';
+            else if (resource.driveLink.includes('/video/upload/')) resType = 'video';
+
+            const publicId = resType === 'raw' 
+                ? 'hirehub_uploads/' + fileWithExt
+                : 'hirehub_uploads/' + fileWithExt.split('.')[0];
+
+            await cloudinary.uploader.destroy(publicId, { resource_type: resType });
+            console.log(`🗑️ Cloudinary Object Deleted: ${publicId} (${resType})`);
+        } catch (err) {
+            console.error('⚠️ Cloudinary Cleanup Failed:', err.message);
         }
     }
 
-    // Log BEFORE deletion to ensure we have resource details
     await auditLogger.logAction(req, 'DELETE', 'PrepResource', req.params.id, `Deleted resource: ${resource.title}`);
 
-    await PrepResource.delete(req.params.id);
+    if (typeof PrepResource.delete === 'function') {
+        await PrepResource.deleteOne(req.params.id);
+    } else {
+        await PrepResource.deleteOne({ id: req.params.id });
+    }
     res.status(204).json({ status: 'success', data: null });
 });
 

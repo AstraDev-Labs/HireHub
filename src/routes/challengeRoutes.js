@@ -6,11 +6,11 @@ const { protect, restrictTo } = require('../middlewares/authMiddleware');
 // --- Challenges ---
 
 router.route('/')
-    .get(protect, restrictTo('ADMIN', 'STAFF', 'STUDENT'), challengeController.getAllChallenges)
+    .get(protect, restrictTo('ADMIN', 'STAFF', 'STUDENT', 'PARENT'), challengeController.getAllChallenges)
     .post(protect, restrictTo('ADMIN', 'STAFF'), challengeController.createChallenge);
 
 router.route('/:id')
-    .get(protect, restrictTo('ADMIN', 'STAFF', 'STUDENT'), challengeController.getChallenge)
+    .get(protect, restrictTo('ADMIN', 'STAFF', 'STUDENT', 'PARENT'), challengeController.getChallenge)
     .patch(protect, restrictTo('ADMIN', 'STAFF'), challengeController.updateChallenge);
 
 // --- Submissions ---

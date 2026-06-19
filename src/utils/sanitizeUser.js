@@ -14,6 +14,9 @@ function sanitizeUser(user) {
     delete obj.passwordResetExpires;
     delete obj.__v;
 
+    // Ensure id is preserved (Mongoose toJSON() often drops virtuals)
+    if (user.id) obj.id = user.id;
+
     return obj;
 }
 
