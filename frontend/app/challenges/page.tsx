@@ -166,9 +166,10 @@ export default function ChallengesPage() {
                         </CardHeader>
 
                         <CardContent className="flex-1 pb-6">
-                            <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed mb-4">
-                                {challenge.description}
-                            </p>
+                            <div 
+                                className="text-muted-foreground line-clamp-2 text-sm leading-relaxed mb-4 prose prose-slate dark:prose-invert max-w-none"
+                                dangerouslySetInnerHTML={{ __html: challenge.description || '' }}
+                            />
                             <div className="flex flex-wrap gap-2">
                                 {challenge.topicTags?.map((tag: string) => (
                                     <span key={tag} className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-muted text-muted-foreground">

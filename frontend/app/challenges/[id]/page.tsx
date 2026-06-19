@@ -354,7 +354,10 @@ export default function ChallengeDetailPage() {
                                 <div className="max-w-4xl mx-auto space-y-8 py-4">
                                     <div className="space-y-4">
                                         <h3 className="text-2xl font-bold">Problem Statement</h3>
-                                        <p className="text-muted-foreground text-lg leading-relaxed whitespace-pre-wrap">{challenge.description}</p>
+                                        <div 
+                                            className="text-muted-foreground text-lg leading-relaxed prose prose-slate dark:prose-invert max-w-none" 
+                                            dangerouslySetInnerHTML={{ __html: challenge.description || '' }} 
+                                        />
                                     </div>
 
                                     {challenge.constraints && (
@@ -464,9 +467,10 @@ export default function ChallengeDetailPage() {
                         <TabsContent value="description" className="flex-1 overflow-y-auto p-8 m-0 space-y-6">
                             <div className="prose prose-slate dark:prose-invert max-w-none">
                                 <h3 className="text-2xl font-bold text-foreground">Problem Statement</h3>
-                                <p className="text-muted-foreground text-lg leading-relaxed whitespace-pre-wrap">
-                                    {challenge.description}
-                                </p>
+                                <div 
+                                    className="text-muted-foreground text-lg leading-relaxed prose prose-slate dark:prose-invert max-w-none" 
+                                    dangerouslySetInnerHTML={{ __html: challenge.description || '' }} 
+                                />
 
                                 {challenge.constraints && (
                                     <div className="mt-8">
