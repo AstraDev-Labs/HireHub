@@ -71,7 +71,7 @@ exports.deleteResource = catchAsync(async (req, res, next) => {
         } catch (err) {
             console.error('⚠️ Azure Cleanup Failed:', err.message);
         }
-
+    }
     await auditLogger.logAction(req, 'DELETE', 'PrepResource', req.params.id, `Deleted resource: ${resource.title}`);
 
     if (typeof PrepResource.delete === 'function') {
