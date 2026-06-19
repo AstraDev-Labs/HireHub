@@ -1,7 +1,6 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { storage: cloudinaryStorage } = require('../config/cloudinaryConfig');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 

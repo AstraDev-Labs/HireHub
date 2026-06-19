@@ -44,7 +44,7 @@ async function importLeetCodeQuestions() {
         const TOTAL_TO_FETCH = 2000;
         const BATCH_SIZE = 100;
 
-        for (let skip = 0; skip < TOTAL_TO_FETCH; skip += BATCH_SIZE) {
+        for (let skip = 500; skip < TOTAL_TO_FETCH; skip += BATCH_SIZE) {
             console.log(`\n📦 Fetching batch: skip=${skip}, limit=${BATCH_SIZE}`);
             
             let listData;

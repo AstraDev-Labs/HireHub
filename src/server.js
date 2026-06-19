@@ -106,6 +106,10 @@ app.get('/api/healthz', (req, res) => {
     res.status(200).json({ status: 'success', uptime: process.uptime() });
 });
 
+app.get('/', (req, res) => {
+    res.status(200).send('HireHub API is running gracefully! 🚀');
+});
+
 app.use(enforceHTTPS);
 
 app.use(helmet({

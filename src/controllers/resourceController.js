@@ -71,27 +71,6 @@ exports.deleteResource = catchAsync(async (req, res, next) => {
         } catch (err) {
             console.error('⚠️ Azure Cleanup Failed:', err.message);
         }
-    } else if (resource.driveLink && resource.driveLink.includes('res.cloudinary.com')) {
-        // Fallback for legacy Cloudinary links if they exist
-        try {
-            const { cloudinary } = require('../config/cloudinaryConfig');
-            const urlParts = resource.driveLink.split('/');
-            const fileWithExt = urlParts[urlParts.length - 1];
-            let resType = 'image';
-            
-            if (resource.driveLink.includes('/raw/upload/')) resType = 'raw';
-            else if (resource.driveLink.includes('/video/upload/')) resType = 'video';
-
-            const publicId = resType === 'raw' 
-                ? 'hirehub_uploads/' + fileWithExt
-                : 'hirehub_uploads/' + fileWithExt.split('.')[0];
-
-            await cloudinary.uploader.destroy(publicId, { resource_type: resType });
-            console.log(`🗑️ Cloudinary Object Deleted: ${publicId} (${resType})`);
-        } catch (err) {
-            console.error('⚠️ Cloudinary Cleanup Failed:', err.message);
-        }
-    }
 
     await auditLogger.logAction(req, 'DELETE', 'PrepResource', req.params.id, `Deleted resource: ${resource.title}`);
 
