@@ -168,8 +168,8 @@ export default function ChallengeDetailPage() {
             } else {
                 toast.error(res.data.data.result || "Check execution details");
             }
-        } catch (error) {
-            toast.error("Execution failed");
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Execution failed");
         } finally {
             setSubmitting(false);
         }
@@ -504,9 +504,9 @@ export default function ChallengeDetailPage() {
 
                         <TabsContent value="console" className="flex-1 overflow-y-auto p-0 m-0 bg-slate-950/50">
                             {!result && !submitting ? (
-                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8 opacity-50">
-                                    <Terminal className="w-12 h-12 mb-4" />
-                                    <p className="text-sm font-medium">Run your code to see results here.</p>
+                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8">
+                                    <Terminal className="w-12 h-12 mb-4 text-primary" />
+                                    <p className="text-sm font-medium text-foreground">Run your code to see results here.</p>
                                 </div>
                             ) : submitting ? (
                                 <div className="h-full flex flex-col items-center justify-center p-8 space-y-4">

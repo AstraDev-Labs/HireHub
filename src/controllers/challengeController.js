@@ -238,8 +238,8 @@ exports.submitSolution = async (req, res, next) => {
             }
         });
     } catch (error) {
-        console.error("Judge0 Error:", error.response?.data || error.message);
-        next(new AppError('Error executing code. Please ensure your Judge0 Docker container is running.', 500));
+        console.error("SubmitSolution Error:", error);
+        next(new AppError(error.message || 'Error executing code.', 500));
     }
 };
 

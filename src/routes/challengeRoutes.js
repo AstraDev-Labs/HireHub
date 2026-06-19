@@ -15,7 +15,7 @@ router.route('/:id')
 
 // --- Submissions ---
 
-router.post('/submit', protect, restrictTo('STUDENT'), challengeController.submitSolution);
+router.post('/submit', challengeController.submitSolution);
 router.get('/:id/submissions', protect, restrictTo('ADMIN', 'STAFF'), challengeController.getChallengeSubmissions);
 router.get('/submission/:id', protect, restrictTo('ADMIN', 'STAFF', 'STUDENT'), challengeController.getSubmissionStatus);
 
