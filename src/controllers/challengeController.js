@@ -141,7 +141,7 @@ const JUDGE0_LANGUAGE_MAP = {
 exports.submitSolution = async (req, res, next) => {
     try {
         const { challengeId, language, code } = req.body;
-        const studentId = req.user.id;
+        const studentId = req.user.id || req.user._id;
 
         const challenge = await Challenge.findById(challengeId);
         if (!challenge) {
