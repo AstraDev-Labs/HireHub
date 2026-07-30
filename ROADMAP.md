@@ -34,9 +34,9 @@ This document outlines the planned trajectory for HireHub, identifying future fe
 ---
 
 ## 🧠 [v2.0.0] - The "Smart Matching" Update
-**Focus:** Introducing AI/ML features to streamline the recruitment processing.
+**Focus:** Introducing AI/ML features to streamline the recruitment process.
 ### Planned Features:
-- **AI Resume Parsing (ATS):** Automatically extract key skills, CGPA, and project details from uploaded resumes string matching to standard job descriptions.
+- **AI Resume Parsing (ATS):** Automatically extract key skills, CGPA, and project details from uploaded resumes and match them to standard job descriptions.
 - **Intelligent Job Recommendations:** Suggest relevant companies to students based on their portfolio and academic history.
 - **Automated Interview Prep:** A dedicated AI chatbot within the Resources tab to help students practice common interview questions for specific roles.
 - **Video Assessments:** Built-in asynchronous video interview recording for initial screening rounds.
@@ -47,7 +47,7 @@ This document outlines the planned trajectory for HireHub, identifying future fe
 **Focus:** Integration with external learning platforms and expanding the ecosystem.
 ### Planned Features:
 - **LinkedIn Integration:** Allow students to sync their LinkedIn profiles directly with their HireHub profiles.
-- **Coursera/Udemy Badges:** Automatic verifying and displaying of certificates from major learning platforms.
+- **Coursera/Udemy Badges:** Automatically verify and display certificates from major learning platforms.
 - **Alumni Mentorship Network:** Introduce an 'Alumni' role, allowing graduated students to mentor current students and share referral links.
 
 ---
