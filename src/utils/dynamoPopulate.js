@@ -29,14 +29,17 @@ async function populate(docs, field, Model, selectFields) {
     let related;
     try {
         related = await Model.batchGet(ids);
-    } catch {
+    } catch (err) {
+        console.warn(`[WARN] BatchGet failed, falling back to sequential fetch:`, err.message);
         // Fallback: fetch one by one if batchGet fails
         related = [];
         for (const id of ids) {
             try {
                 const doc = await Model.get(id);
                 if (doc) related.push(doc);
-            } catch { /* skip missing */ }
+            } catch (err) {
+                console.warn(`[WARN] Failed to fetch document ID ${id}:`, err.message);
+            }
         }
     }
 

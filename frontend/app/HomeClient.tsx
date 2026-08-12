@@ -51,16 +51,16 @@ export default function HomeClient() {
             </p>
             
             <div className="flex flex-col sm:sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-              <Link href="/register">
-                <Button size="lg" className="h-14 px-8 text-lg font-bold shadow-xl shadow-primary/25 hover:scale-105 transition-all" aria-label="Register for HireHub">
-                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
+              <a href="/api/auth/login">
+                <Button className="font-semibold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-primary/90 hover:bg-primary">
+                  Get Started <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold hover:bg-muted/50 transition-all" aria-label="Login to HireHub">
-                  Existing User Login
+              </a>
+              <a href="/api/auth/login">
+                <Button variant="outline" className="font-semibold px-8 py-6 text-lg border-2 hover:bg-muted/50 transition-all duration-300 hover:scale-105">
+                  Sign In
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>

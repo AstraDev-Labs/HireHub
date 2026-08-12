@@ -14,7 +14,9 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Check, X, Trophy } from 'lucide-react';
 
 export default function RoundEvaluationPage() {
-    const { id, roundId } = useParams();
+    const params = useParams();
+    const id = params?.id as string;
+    const roundId = params?.roundId as string;
     const router = useRouter();
     const { user } = useAuth();
 

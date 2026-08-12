@@ -26,7 +26,8 @@ const offerLetterSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['ISSUED', 'ACCEPTED', 'DECLINED', 'REVOKED'],
-        default: 'ISSUED'
+        default: 'ISSUED',
+        index: true
     },
     remarks: String,
     issuedBy: String,
@@ -39,16 +40,16 @@ offerLetterSchema.statics.findById = async function (id) {
     try { return await this.findOne({ id }); } catch { return null; }
 };
 
-offerLetterSchema.statics.findByStudentId = async function (studentId) {
-    return this.find({ studentId });
+offerLetterSchema.statics.findByStudentId = async function (studentId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ studentId }).sort(sort).skip(skip).limit(limit);
 };
 
-offerLetterSchema.statics.findByCompanyId = async function (companyId) {
-    return this.find({ companyId });
+offerLetterSchema.statics.findByCompanyId = async function (companyId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ companyId }).sort(sort).skip(skip).limit(limit);
 };
 
-offerLetterSchema.statics.findAll = async function () {
-    return this.find();
+offerLetterSchema.statics.findAll = async function ({ skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find().sort(sort).skip(skip).limit(limit);
 };
 
 const OfferLetter = mongoose.model('OfferLetter', offerLetterSchema);

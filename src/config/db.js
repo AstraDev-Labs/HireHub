@@ -10,13 +10,23 @@ const logsURI = process.env.LOGS_DB_URI || 'mongodb://127.0.0.1:27017/placement_
 mongoose.set('strictQuery', false);
 
 // Secondary connection for logs
-const logsDb = mongoose.createConnection(logsURI);
+const logsDb = mongoose.createConnection(logsURI, {
+    maxPoolSize: 500,
+    serverSelectionTimeoutMS: 15000,
+    socketTimeoutMS: 45000,
+    family: 4
+});
 logsDb.on('connected', () => console.log(`✅ Logs DB Connected: ${logsDb.host}`));
 logsDb.on('error', (err) => console.error(`❌ Logs DB Connection Error: ${err.message}`));
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(systemURI);
+        const conn = await mongoose.connect(systemURI, {
+            maxPoolSize: 500,
+            serverSelectionTimeoutMS: 15000,
+            socketTimeoutMS: 45000,
+            family: 4
+        });
         console.log(`✅ System DB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.error(`❌ System DB Connection Error: ${error.message}`);

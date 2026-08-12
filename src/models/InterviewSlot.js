@@ -31,7 +31,8 @@ const interviewSchema = new mongoose.Schema({
     roundName: { type: String },
     scheduledAt: {
         type: Date,
-        required: true
+        required: true,
+        index: true
     },
     durationMinutes: {
         type: Number,
@@ -43,7 +44,8 @@ const interviewSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['SCHEDULED', 'COMPLETED', 'CANCELED', 'NO_SHOW'],
-        default: 'SCHEDULED'
+        default: 'SCHEDULED',
+        index: true
     },
     feedback: {
         type: String
@@ -56,16 +58,16 @@ interviewSchema.statics.findById = async function (id) {
     try { return await this.findOne({ id }); } catch { return null; }
 };
 
-interviewSchema.statics.findByStudentId = async function (studentId) {
-    return this.find({ studentId });
+interviewSchema.statics.findByStudentId = async function (studentId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ studentId }).sort(sort).skip(skip).limit(limit);
 };
 
-interviewSchema.statics.findByCompanyId = async function (companyId) {
-    return this.find({ companyId });
+interviewSchema.statics.findByCompanyId = async function (companyId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ companyId }).sort(sort).skip(skip).limit(limit);
 };
 
-interviewSchema.statics.findByDriveId = async function (driveId) {
-    return this.find({ driveId });
+interviewSchema.statics.findByDriveId = async function (driveId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ driveId }).sort(sort).skip(skip).limit(limit);
 };
 
 const InterviewSlot = mongoose.model('InterviewSlot', interviewSchema);

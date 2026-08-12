@@ -8,25 +8,22 @@ const { logAction } = require('../utils/auditLogger');
 
 // Get all drives (sorted by date)
 exports.getAllDrives = catchAsync(async (req, res, next) => {
-    const drives = await PlacementDrive.findAll();
+    // Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const skip = (page - 1) * limit;
 
-    // Auto-delete expired drives
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
 
-    const validDrives = [];
-    for (const drive of drives) {
-        if (new Date(drive.date) < today) {
-            // Expired, delete it
-            await PlacementDrive.deleteOne({ id: drive.id });
-        } else {
-            validDrives.push(drive);
-        }
-    }
+    // Offload filtering, sorting, and pagination entirely to MongoDB
+    let drives = await PlacementDrive.find({ date: { $gte: todayStr } })
+        .sort({ date: 1 })
+        .skip(skip)
+        .limit(limit);
 
-    const sorted = validDrives.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    let result = sorted.map(d => {
+    let result = drives.map(d => {
         const obj = typeof d.toJSON === 'function' ? d.toJSON() : { ...d };
         obj._id = obj.id;
         return obj;

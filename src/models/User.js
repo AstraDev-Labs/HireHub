@@ -1,16 +1,19 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 
 const userSchema = new mongoose.Schema({
 
     username: {
         type: String,
-        required: true
+        required: true,
+        unique: true,
+        index: true
     },
-    password: {
+    auth0_id: {
         type: String,
-        required: true
+        unique: true,
+        sparse: true,
+        index: true
     },
     fullName: {
         type: String,
@@ -28,8 +31,7 @@ const userSchema = new mongoose.Schema({
     department: String,
     role: {
         type: String,
-        enum: ['STUDENT', 'ADMIN', 'STAFF', 'COMPANY', 'PARENT'],
-        default: 'STUDENT'
+        enum: ['STUDENT', 'ADMIN', 'STAFF', 'COMPANY', 'PARENT']
     },
     isActive: {
         type: Boolean,
@@ -56,21 +58,12 @@ const userSchema = new mongoose.Schema({
     refreshToken: String,
     lastLogin: String,
     publicKey: { type: String, default: null },
-    profileImage: { type: String, default: null },
-    passwordResetToken: { type: String, required: false },
-    passwordResetExpires: { type: Number, required: false }
+    profileImage: { type: String, default: null }
 }, {
     timestamps: true
 });
 
 // --- Static Methods ---
-
-userSchema.statics.createWithHash = async function (data) {
-    if (data.password) {
-        data.password = await bcrypt.hash(data.password, 12);
-    }
-    return this.create(data);
-};
 
 userSchema.statics.findByEmail = async function (email) {
     return this.findOne({ email: email.toLowerCase() });
@@ -82,32 +75,16 @@ userSchema.statics.findByUsername = async function (username) {
 
 
 
-userSchema.statics.findByApprovalStatus = async function (status) {
-    return this.find({ approvalStatus: status });
+userSchema.statics.findByApprovalStatus = async function (status, { skip = 0, limit = 0 } = {}) {
+    return this.find({ approvalStatus: status }).skip(skip).limit(limit);
 };
 
-userSchema.statics.findAll = async function (filter = {}) {
-    return this.find(filter);
-};
-
-userSchema.statics.correctPassword = async function (candidatePassword, hashedPassword) {
-    if (!hashedPassword) return false;
-    return bcrypt.compare(candidatePassword, hashedPassword);
+userSchema.statics.findAll = async function (filter = {}, { skip = 0, limit = 0 } = {}) {
+    return this.find(filter).skip(skip).limit(limit);
 };
 
 userSchema.statics.countAll = async function (filter = {}) {
     return this.countDocuments(filter);
-};
-
-// Password strength validation
-userSchema.statics.validatePassword = function (password) {
-    const errors = [];
-    if (password.length < 8) errors.push('at least 8 characters');
-    if (!/[A-Z]/.test(password)) errors.push('one uppercase letter');
-    if (!/[a-z]/.test(password)) errors.push('one lowercase letter');
-    if (!/[0-9]/.test(password)) errors.push('one number');
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('one special character');
-    return errors;
 };
 
 const User = mongoose.model('User', userSchema);

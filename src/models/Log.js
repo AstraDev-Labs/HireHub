@@ -8,7 +8,7 @@ const logSchema = new mongoose.Schema({
         default: uuidv4,
         index: true
     },
-    userId: String,
+    userId: { type: String, index: true },
     action: String,
     route: String,
     method: String,
@@ -16,7 +16,8 @@ const logSchema = new mongoose.Schema({
     statusCode: Number,
     timestamp: {
         type: String,
-        default: () => new Date().toISOString()
+        default: () => new Date().toISOString(),
+        index: true
     },
     metadata: mongoose.Schema.Types.Mixed
 }, {

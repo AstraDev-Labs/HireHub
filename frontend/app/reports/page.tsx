@@ -92,7 +92,7 @@ export default function ReportsPage() {
         finally { setDownloading(''); }
     };
 
-    if (!user || !['ADMIN', 'STAFF'].includes(user.role)) {
+    if (!user || !user.role || !['ADMIN', 'STAFF'].includes(user.role)) {
         return <div className="p-8 text-center text-muted-foreground">Access restricted to Admin/Staff only.</div>;
     }
 

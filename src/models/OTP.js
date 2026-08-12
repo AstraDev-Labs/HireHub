@@ -44,13 +44,8 @@ otpSchema.statics.generate = function (length = 6) {
 };
 
 otpSchema.statics.createOTP = async function (email, type) {
-    // Invalidate old OTPs of same type for this email
-    const existing = await this.find({ email: email.toLowerCase() });
-    for (const old of existing) {
-        if (old.type === type && !old.verified) {
-            await this.deleteOne({ id: old.id });
-        }
-    }
+    // Invalidate old OTPs of same type for this email using a single query
+    await this.deleteMany({ email: email.toLowerCase(), type, verified: false });
 
     const code = this.generate();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes

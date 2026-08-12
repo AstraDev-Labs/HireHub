@@ -1,57 +1,42 @@
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
-const catchAsync = require('../utils/catchAsync');
+require('dotenv').config();
 
-exports.protect = catchAsync(async (req, res, next) => {
-    let token;
-
-    // 1) Read token from HttpOnly cookie first (most secure)
-    if (req.cookies && req.cookies.jwt && req.cookies.jwt !== 'loggedout') {
-        token = req.cookies.jwt;
+exports.protect = async (req, res, next) => {
+  try {
+    // We expect requests to be proxied by Next.js, which validates the session
+    // and sends x-internal-secret and x-user-auth0-id headers.
+    const internalSecret = req.headers['x-internal-secret'];
+    const auth0Id = req.headers['x-user-auth0-id'];
+    
+    if (!internalSecret || internalSecret !== process.env.AUTH0_SECRET) {
+      return next(new AppError('Unauthorized. Invalid or missing internal secret.', 401));
     }
-    // 2) Fall back to Authorization header (backward compatibility)
-    else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
+    
+    if (!auth0Id) {
+      return next(new AppError('Unauthorized. Missing user ID.', 401));
     }
-
-    if (!token) {
-        return next(new AppError('You are not logged in! Please log in to get access.', 401));
+    
+    // Find the user in MongoDB using the Auth0 ID
+    const user = await User.findOne({ auth0_id: auth0Id });
+    
+    if (!user) {
+      return next(new AppError('User profile not synced to database yet.', 401));
     }
-
-    let decoded;
-    try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
-        return next(new AppError('Invalid token. Please log in again!', 401));
-    }
-
-    let currentUser;
-    try {
-        currentUser = await User.findById(decoded.id);
-    } catch (err) {
-        if (err.name === 'CastError') {
-            return next(new AppError('Invalid token format. Please log in again!', 401));
-        }
-        return next(err);
-    }
-
-    if (!currentUser) {
-        return next(new AppError('The user belonging to this token no longer exists.', 401));
-    }
-
-    // Add _id alias for frontend compatibility
-    req.user = typeof currentUser.toJSON === 'function' ? currentUser.toJSON() : { ...currentUser };
-    req.user._id = currentUser.id;
+    
+    // Attach the user (and their roles) to the request!
+    req.user = user;
     next();
-});
+  } catch (err) {
+    next(err);
+  }
+};
 
 exports.restrictTo = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
+        if (!req.user || !roles.includes(req.user.role)) {
             return next(new AppError('You do not have permission to perform this action', 403));
         }
         next();
     };
 };
-

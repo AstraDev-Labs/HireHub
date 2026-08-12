@@ -108,29 +108,40 @@ exports.createStudent = catchAsync(async (req, res, next) => {
 
 exports.getAllStudents = catchAsync(async (req, res, next) => {
     console.log("GET /students called by:", req.user.role, req.user._id);
-    const students = await Student.findAll();
+    
+    // Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const skip = (page - 1) * limit;
 
-    // Parallel populate: fetch all user details at once
+    const students = await Student.findAll({}, { skip, limit });
+    
+    // Fix N+1 problem by fetching all related users in a single query
+    const userIds = students.map(s => s.userId).filter(Boolean);
     const User = require('../models/User');
+    const users = await User.find({ _id: { $in: userIds }, approvalStatus: 'APPROVED' });
+    
+    const userMap = {};
+    users.forEach(u => {
+        userMap[u.id] = { _id: u.id, fullName: u.fullName, email: u.email };
+    });
 
-    const populatedStudents = await Promise.all(students.map(async (s) => {
+    const populatedStudents = students.map(s => {
         const obj = typeof s.toJSON === 'function' ? s.toJSON() : { ...s };
         obj._id = obj.id;
-        if (obj.userId) {
-            const user = await User.findById(obj.userId);
-            if (user && user.approvalStatus === 'APPROVED') {
-                obj.userId = { _id: user.id, fullName: user.fullName, email: user.email };
-                return obj;
-            }
+        if (obj.userId && userMap[obj.userId]) {
+            obj.userId = userMap[obj.userId];
+            return obj;
         }
         return null;
-    }));
+    });
 
     const result = populatedStudents.filter(s => s !== null);
 
     res.status(200).json({
         status: 'success',
         results: result.length,
+        page,
         data: { students: result }
     });
 });

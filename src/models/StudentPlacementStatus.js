@@ -24,7 +24,8 @@ const placementStatusSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['CLEARED', 'REJECTED', 'PENDING', 'PLACED', 'PENDING_APPROVAL'],
-        default: 'PENDING_APPROVAL'
+        default: 'PENDING_APPROVAL',
+        index: true
     },
     updatedBy: String
 }, {
@@ -37,16 +38,16 @@ placementStatusSchema.statics.findById = async function (id) {
     try { return await this.findOne({ id }); } catch { return null; }
 };
 
-placementStatusSchema.statics.findByStudentId = async function (studentId) {
-    return this.find({ studentId });
+placementStatusSchema.statics.findByStudentId = async function (studentId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ studentId }).sort(sort).skip(skip).limit(limit);
 };
 
-placementStatusSchema.statics.findByCompanyId = async function (companyId) {
-    return this.find({ companyId });
+placementStatusSchema.statics.findByCompanyId = async function (companyId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ companyId }).sort(sort).skip(skip).limit(limit);
 };
 
-placementStatusSchema.statics.findByFilter = async function (filter = {}) {
-    return this.find(filter);
+placementStatusSchema.statics.findByFilter = async function (filter = {}, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find(filter).sort(sort).skip(skip).limit(limit);
 };
 
 // Mongoose provides a built-in findOne that works perfectly for their use case
@@ -56,8 +57,8 @@ placementStatusSchema.statics.customFindOne = async function (filter) {
     return this.findOne(filter);
 };
 
-placementStatusSchema.statics.findAll = async function () {
-    return this.find();
+placementStatusSchema.statics.findAll = async function ({ skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find().sort(sort).skip(skip).limit(limit);
 };
 
 const StudentPlacementStatus = mongoose.model('StudentPlacementStatus', placementStatusSchema);

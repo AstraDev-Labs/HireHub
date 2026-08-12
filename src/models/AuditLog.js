@@ -29,7 +29,8 @@ const auditLogSchema = new mongoose.Schema({
     },
     resource: {
         type: String,
-        required: true // e.g., 'Challenge', 'Drive', 'Interview'
+        required: true,
+        index: true // e.g., 'Challenge', 'Drive', 'Interview'
     },
     resourceId: String,
     details: String // Human-readable description
@@ -40,8 +41,10 @@ const auditLogSchema = new mongoose.Schema({
     }
 });
 
-auditLogSchema.statics.findAll = async function (filter = {}) {
-    return this.find(filter);
+auditLogSchema.index({ timestamp: -1 });
+
+auditLogSchema.statics.findAll = async function (filter = {}, { skip = 0, limit = 0, sort = { timestamp: -1 } } = {}) {
+    return this.find(filter).sort(sort).skip(skip).limit(limit);
 };
 
 const AuditLog = logsDb.model('AuditLog', auditLogSchema);

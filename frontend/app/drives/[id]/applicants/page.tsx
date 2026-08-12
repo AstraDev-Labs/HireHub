@@ -31,6 +31,7 @@ interface Applicant {
 
 export default function ApplicantsPage() {
     const params = useParams();
+    const id = params?.id as string;
     const router = useRouter();
     const { user } = useAuth();
 
@@ -50,11 +51,11 @@ export default function ApplicantsPage() {
             return;
         }
         fetchApplicants();
-    }, [user, params.id]);
+    }, [user, id]);
 
     const fetchApplicants = async () => {
         try {
-            const { data } = await api.get(`/applications/drive/${params.id}`);
+            const { data } = await api.get(`/applications/drive/${id}`);
             // Filter out withdrawn applications for the company view by default
             setApplicants(data.data.applications.filter((a: any) => a.status !== 'WITHDRAWN'));
         } catch (err: any) {
@@ -89,7 +90,7 @@ export default function ApplicantsPage() {
             const scheduledAt = new Date(`${interviewDate}T${interviewTime}`).toISOString();
 
             await api.post('/interviews/schedule', {
-                driveId: params.id,
+                driveId: id,
                 roundId: 'initial', // In a real scenario, roundId should be tracked
                 slots: [
                     {

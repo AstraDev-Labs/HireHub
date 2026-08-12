@@ -13,7 +13,8 @@ import { Plus, Edit, Trash, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CompanyRoundsPage() {
-    const { id } = useParams();
+    const params = useParams();
+    const id = params?.id as string;
     const router = useRouter(); // Initialize router
     const { user } = useAuth();
     const [rounds, setRounds] = useState<any[]>([]);

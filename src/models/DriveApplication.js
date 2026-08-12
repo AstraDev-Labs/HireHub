@@ -19,12 +19,14 @@ const driveApplicationSchema = new mongoose.Schema({
     },
     companyId: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     status: {
         type: String,
         enum: ['APPLIED', 'SHORTLISTED', 'REJECTED', 'WITHDRAWN'],
-        default: 'APPLIED'
+        default: 'APPLIED',
+        index: true
     }
 }, {
     timestamps: true
@@ -35,12 +37,12 @@ driveApplicationSchema.statics.findById = async function (id) {
     try { return await this.findOne({ id }); } catch { return null; }
 };
 
-driveApplicationSchema.statics.findByStudentId = async function (studentId) {
-    return this.find({ studentId });
+driveApplicationSchema.statics.findByStudentId = async function (studentId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ studentId }).sort(sort).skip(skip).limit(limit);
 };
 
-driveApplicationSchema.statics.findByDriveId = async function (driveId) {
-    return this.find({ driveId });
+driveApplicationSchema.statics.findByDriveId = async function (driveId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ driveId }).sort(sort).skip(skip).limit(limit);
 };
 
 // Mongoose already provides findOne(), but overriding to match exact behavior if needed

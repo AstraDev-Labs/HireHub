@@ -89,16 +89,8 @@ function AdminDashboard({ user }: { user: any }) {
                 <StatCard title="Not Placed" value={stats.notPlacedStudents} subtitle="Still seeking" icon={UserX} iconColor="text-amber-500" valueColor="text-amber-600" />
                 <StatCard title="Companies" value={stats.totalCompanies} subtitle="Active recruiting" icon={Building2} iconColor="text-indigo-500" valueColor="text-indigo-600" />
                 <StatCard title="Placement Rate" value={`${stats.placementRate}%`} subtitle="Overall rate" icon={TrendingUp}
-                    iconColor={stats.placementRate >= 50 ? "text-green-500" : "text-amber-500"}
+    iconColor={stats.placementRate >= 50 ? "text-green-500" : "text-amber-500"}
                     valueColor={stats.placementRate >= 50 ? "text-green-600" : "text-amber-600"} />
-                <StatCard 
-                    title="Coding Platform" 
-                    value={stats.totalChallenges || 0} 
-                    subtitle="Active challenges" 
-                    icon={Code} 
-                    iconColor="text-primary" 
-                    onClick={() => router.push('/challenges')}
-                />
             </div>
 
             {/* Pending Registrations Alert */}

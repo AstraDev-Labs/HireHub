@@ -111,7 +111,6 @@ export default function AdminLogsPage() {
                                 className="bg-background border border-border/50 rounded-md px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-primary outline-none min-w-[140px]"
                             >
                                 <option value="ALL">All Resources</option>
-                                <option value="Challenge">Challenges</option>
                                 <option value="Drive">Placement Drives</option>
                                 <option value="Interview">Interviews</option>
                                 <option value="User">User Approvals</option>

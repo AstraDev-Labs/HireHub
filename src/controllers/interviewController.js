@@ -7,7 +7,7 @@ const Notification = require('../models/Notification');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const { v4: uuidv4 } = require('uuid');
-const sendEmail = require('../utils/sendEmail');
+const { emailQueue } = require('../queues/emailQueue');
 const { logAction } = require('../utils/auditLogger');
 
 exports.createInterviewSlots = catchAsync(async (req, res, next) => {
@@ -91,7 +91,7 @@ exports.createInterviewSlots = catchAsync(async (req, res, next) => {
         // Send Email
         try {
             const meetingLinkText = slot.meetLink ? `\n\nMeeting Link: ${slot.meetLink}` : '';
-            await sendEmail({
+            await emailQueue.add('sendEmail', {
                 email: student.email,
                 subject: `Interview Scheduled - ${company.name}`,
                 message: `Dear ${student.name},\n\nYour interview with ${company.name} for the ${round.roundName || round.roundType} round has been scheduled.\n\nDate & Time: ${new Date(slot.scheduledAt).toLocaleString()}${meetingLinkText}\n\nGood luck!\n\nRegards,\nPlacement Cell`

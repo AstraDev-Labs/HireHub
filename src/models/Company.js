@@ -20,7 +20,8 @@ const companySchema = new mongoose.Schema({
     hiringStatus: {
         type: String,
         enum: ['OPEN', 'CLOSED'],
-        default: 'OPEN'
+        default: 'OPEN',
+        index: true
     },
     minCgpa: {
         type: Number,
@@ -40,7 +41,8 @@ const companySchema = new mongoose.Schema({
     },
     packageLpa: {
         type: Number,
-        required: true
+        required: true,
+        index: true
     },
     location: {
         type: [String],
@@ -57,8 +59,8 @@ companySchema.statics.findById = async function (id) {
     try { return await this.findOne({ id }); } catch { return null; }
 };
 
-companySchema.statics.findAll = async function (filter = {}) {
-    return this.find(filter);
+companySchema.statics.findAll = async function (filter = {}, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find(filter).sort(sort).skip(skip).limit(limit);
 };
 
 companySchema.statics.countAll = async function () {

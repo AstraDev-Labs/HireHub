@@ -20,14 +20,16 @@ const messageSchema = new mongoose.Schema({
     },
     receiverRole: {
         type: String,
-        enum: ['STUDENT', 'PARENT', 'COMPANY', 'STAFF', 'ADMIN', 'ALL']
+        enum: ['STUDENT', 'PARENT', 'COMPANY', 'STAFF', 'ADMIN', 'ALL'],
+        index: true
     },
     subject: String,
     content: { type: String, required: true },
     type: {
         type: String,
         enum: ['DIRECT', 'ANNOUNCEMENT', 'SYSTEM'],
-        default: 'DIRECT'
+        default: 'DIRECT',
+        index: true
     },
     attachments: {
         type: [{
@@ -52,34 +54,25 @@ messageSchema.statics.findById = async function (id) {
     try { return await this.findOne({ id }); } catch { return null; }
 };
 
-messageSchema.statics.findForUser = async function (userId, userRole) {
-    // Get messages where user is receiver, sender, or target of announcement
-    const [received, sent, relevantAnnouncements] = await Promise.all([
-        this.find({ receiverId: userId }),
-        this.find({ senderId: userId }),
-        this.find({
-            type: 'ANNOUNCEMENT',
-            receiverRole: { $in: [userRole, 'ALL'] }
-        })
-    ]);
-
-    // Merge, deduplicate by ID, and sort by createdAt desc
-    const map = new Map();
-    [...received, ...sent, ...relevantAnnouncements].forEach(m => {
-        const obj = typeof m.toJSON === 'function' ? m.toJSON() : { ...m };
-        map.set(obj.id, obj);
-    });
-
-    return [...map.values()].sort((a, b) =>
-        new Date(b.createdAt) - new Date(a.createdAt)
-    );
+messageSchema.statics.findForUser = async function (userId, userRole, { skip = 0, limit = 0, sort = { createdAt: -1 } } = {}) {
+    return this.find({
+        $or: [
+            { receiverId: userId },
+            { senderId: userId },
+            { type: 'ANNOUNCEMENT', receiverRole: { $in: [userRole, 'ALL'] } }
+        ]
+    }).sort(sort).skip(skip).limit(limit);
 };
 
 messageSchema.statics.countUnread = async function (userId, userRole) {
-    const messages = await this.findForUser(userId, userRole);
-    return messages.filter(m =>
-        m.senderId !== userId && !(m.readBy || []).includes(userId)
-    ).length;
+    return this.countDocuments({
+        $or: [
+            { receiverId: userId },
+            { type: 'ANNOUNCEMENT', receiverRole: { $in: [userRole, 'ALL'] } }
+        ],
+        senderId: { $ne: userId },
+        readBy: { $ne: userId }
+    });
 };
 
 const Message = mongoose.model('Message', messageSchema);

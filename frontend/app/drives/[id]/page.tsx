@@ -39,6 +39,7 @@ const safeFormatDate = (dateStr: string) => {
 
 export default function DriveDetailsPage() {
     const params = useParams();
+    const id = params?.id as string;
     const router = useRouter();
     const { user } = useAuth();
 
@@ -50,7 +51,7 @@ export default function DriveDetailsPage() {
 
     useEffect(() => {
         fetchDriveDetails();
-    }, [params.id]);
+    }, [id]);
 
     useEffect(() => {
         if (user && user.role === 'STUDENT' && drive) {
@@ -62,7 +63,7 @@ export default function DriveDetailsPage() {
 
     const fetchDriveDetails = async () => {
         try {
-            const { data } = await api.get(`/drives/${params.id}`);
+            const { data } = await api.get(`/drives/${id}`);
             setDrive(data.data.drive);
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to load drive details');
@@ -76,7 +77,7 @@ export default function DriveDetailsPage() {
         try {
             const { data } = await api.get('/applications/my-applications');
             const applications = data.data.applications || [];
-            const applied = applications.some((app: any) => app.driveId === params.id && app.status !== 'WITHDRAWN');
+            const applied = applications.some((app: any) => app.driveId === id && app.status !== 'WITHDRAWN');
             setHasApplied(applied);
         } catch (error) {
             console.error('Failed to check application status', error);
@@ -94,7 +95,7 @@ export default function DriveDetailsPage() {
 
         try {
             setApplying(true);
-            await api.post('/applications', { driveId: params.id });
+            await api.post('/applications', { driveId: id });
             toast.success('Successfully applied to drive!');
             setHasApplied(true);
         } catch (error: any) {
@@ -153,7 +154,7 @@ export default function DriveDetailsPage() {
                                                 if (!confirm('Are you sure you want to withdraw your application?')) return;
                                                 try {
                                                     const { data } = await api.get('/applications/my-applications');
-                                                    const app = data.data.applications.find((a: any) => a.driveId === params.id && a.status !== 'WITHDRAWN');
+                                                    const app = data.data.applications.find((a: any) => a.driveId === id && a.status !== 'WITHDRAWN');
                                                     if (app) {
                                                         await api.patch(`/applications/${app._id}/withdraw`);
                                                         toast.success('Application withdrawn');

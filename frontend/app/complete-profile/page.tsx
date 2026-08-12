@@ -22,7 +22,7 @@ const formSchema = z.object({
 });
 
 export default function CompleteProfilePage() {
-    const { user, login } = useAuth(); // We might need to re-login or just update state?
+    const { user } = useAuth(); // We might need to re-login or just update state?
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 

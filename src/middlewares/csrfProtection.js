@@ -49,7 +49,8 @@ function validateCSRF(req, res, next) {
         '/auth/send-phone-otp',
         '/auth/verify-phone-otp',
         '/auth/forgot-password',
-        '/auth/reset-password'
+        '/auth/reset-password',
+        '/auth/internal-sync'
     ];
     if (skipPaths.some(p => req.path.startsWith(p) || req.originalUrl.includes(p))) {
         return next();

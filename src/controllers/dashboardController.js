@@ -3,19 +3,17 @@ const Company = require('../models/Company');
 const StudentPlacementStatus = require('../models/StudentPlacementStatus');
 const OfferLetter = require('../models/OfferLetter');
 const User = require('../models/User');
-const Challenge = require('../models/Challenge');
 const catchAsync = require('../utils/catchAsync');
 const { getOrSetCached } = require('../utils/asyncCache');
 
 exports.getDashboardStats = catchAsync(async (req, res, next) => {
     const data = await getOrSetCached('dashboard:admin:stats', 15000, async () => {
-        const [rawStudents, allCompanies, allPlacements, pendingUsers, allOffers, totalChallenges, approvedUsers] = await Promise.all([
+        const [rawStudents, allCompanies, allPlacements, pendingUsers, allOffers, approvedUsers] = await Promise.all([
             Student.findAll(),
             Company.findAll(),
             StudentPlacementStatus.findAll(),
             User.find({ approvalStatus: 'PENDING' }),
             OfferLetter.findAll(),
-            Challenge.countAll(),
             User.find({ approvalStatus: 'APPROVED' })
         ]);
 
@@ -95,7 +93,6 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
             departmentStats,
             companyStats,
             salaryStats,
-            totalChallenges,
         };
     });
 

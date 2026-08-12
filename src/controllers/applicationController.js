@@ -75,7 +75,9 @@ exports.getMyApplications = catchAsync(async (req, res, next) => {
                 obj.drive = typeof drive.toJSON === 'function' ? drive.toJSON() : { ...drive };
                 obj.drive._id = obj.drive.id;
             }
-        } catch { } // ignore if drive deleted
+        } catch (err) {
+            console.warn(`[WARN] Failed to populate drive ${obj.driveId}:`, err.message);
+        }
 
         result.push(obj);
     }
@@ -129,7 +131,9 @@ exports.getDriveApplicants = catchAsync(async (req, res, next) => {
                     cgpa: student.cgpa
                 };
             }
-        } catch { }
+        } catch (err) {
+            console.warn(`[WARN] Failed to populate student ${obj.studentId}:`, err.message);
+        }
 
         result.push(obj);
     }

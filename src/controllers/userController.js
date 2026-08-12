@@ -22,9 +22,11 @@ exports.getPendingUsers = catchAsync(async (req, res, next) => {
         const studentIds = parentUsers.map(u => u.linkedStudentId);
 
         const studentDeptMap = {};
-        for (const sid of studentIds) {
-            const student = await Student.findById(sid);
-            if (student) studentDeptMap[sid] = student.department;
+        if (studentIds.length > 0) {
+            const students = await Student.find({ id: { $in: studentIds } });
+            students.forEach(student => {
+                studentDeptMap[student.id] = student.department;
+            });
         }
 
         users = users.filter(user => {

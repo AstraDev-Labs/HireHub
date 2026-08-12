@@ -6,6 +6,9 @@ const dotenv = require('dotenv');
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
+// Initialize background queues & workers
+require('./queues/emailQueue');
+
 let server;
 
 function writeCrashLog(prefix, error, onComplete) {
@@ -60,6 +63,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const hpp = require('hpp');
+const compression = require('compression');
 
 const { globalLimiter, authLimiter, uploadLimiter } = require('./middlewares/rateLimiter');
 const sanitize = require('./middlewares/sanitize');
@@ -95,7 +99,6 @@ const placementDriveRoutes = require('./routes/placementDriveRoutes');
 const offerLetterRoutes = require('./routes/offerLetterRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
-const challengeRoutes = require('./routes/challengeRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
@@ -143,6 +146,7 @@ app.use(cors({
 }));
 
 app.use('/api', globalLimiter);
+app.use(compression());
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
@@ -171,7 +175,6 @@ app.use('/api/drives', placementDriveRoutes);
 app.use('/api/offers', offerLetterRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/interviews', interviewRoutes);
-app.use('/api/challenges', challengeRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/api', (req, res) => {

@@ -3,146 +3,115 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { useRouter, usePathname } from 'next/navigation';
-import { EncryptionManager } from '@/lib/encryption';
+import { useUser } from '@auth0/nextjs-auth0/client';
 
 interface User {
     _id: string;
     username: string;
     email: string;
-    role: string;
+    role?: string;
     fullName: string;
-    linkedStudentId?: string;
-    studentName?: string;
+    approvalStatus?: string;
+    profileImage?: string;
     companyId?: string;
     cgpa?: number;
-    batchYear?: string;
-    department?: string;
-    publicKey?: string;
-    profileImage?: string;
+    linkedStudentId?: string;
+    studentName?: string;
+    studentContact?: string;
 }
 
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (token: string, refreshToken: string, user: User, isProfileComplete?: boolean) => void;
     logout: () => void;
     isAuthenticated: boolean;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
-    login: () => { },
     logout: () => { },
     isAuthenticated: false,
+    refreshUser: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+    const { user: auth0User, isLoading: auth0Loading, error: auth0Error } = useUser();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
     const pathname = usePathname();
 
-    useEffect(() => {
-        const fetchCurrentUser = async () => {
-            // Skip check if we are on login/register and don't HAVE a token hint
-            const isPublicPage = pathname.includes('/login') || pathname.includes('/register');
-            const hasToken = !!localStorage.getItem('token'); // Hint that we might be logged in
-
-            if (isPublicPage && !hasToken) {
-                setLoading(false);
-                return;
+    const fetchCurrentUser = async () => {
+        if (!auth0User) return;
+        try {
+            // Call the Next.js API sync endpoint which securely proxies to backend
+            const response = await fetch('/api/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            
+            if (response.ok && data.data && data.data.user) {
+                setUser(data.data.user);
+            } else {
+                setUser(null);
             }
-
-            try {
-                // This GET request will also capture the CSRF token in the interceptor
-                const { data } = await api.get('/users/me');
-                const userData = data.data.user;
-                setUser(userData);
-                localStorage.setItem('user', JSON.stringify(userData));
-            } catch (err: any) {
-                // If it's a 401 or 403, we definitely don't have a valid session
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    setUser(null);
-                } else {
-                    console.error('Initial session check failed:', err);
-                    const storedUser = localStorage.getItem('user');
-                    if (storedUser && hasToken) {
-                        setUser(JSON.parse(storedUser));
-                    }
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCurrentUser();
-    }, [pathname]); // Depend on pathname to re-check if user navigates away from login
-
-    const login = (token: string, _refreshToken: string, userData: User, isProfileComplete: boolean = true) => {
-        // Store token in localStorage for Bearer header (backward compat)
-        // The real security comes from HttpOnly cookies set by the server
-        localStorage.setItem('token', token);
-        // Only store non-sensitive user profile data
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-
-        if (!isProfileComplete && userData.role === 'STUDENT') {
-            router.push('/complete-profile');
-        } else {
-            router.push('/dashboard');
+        } catch (err: any) {
+            console.error('Failed to sync user with backend:', err);
+            setUser(null);
         }
     };
+
+    useEffect(() => {
+        if (auth0Loading) {
+            setLoading(true);
+            return;
+        }
+
+        if (auth0User) {
+            fetchCurrentUser().finally(() => setLoading(false));
+        } else {
+            setUser(null);
+            setLoading(false);
+        }
+    }, [auth0User, auth0Loading]);
+
+    const refreshUser = async () => {
+        if (auth0User) {
+            await fetchCurrentUser();
+        }
+    }
 
     const logout = async () => {
-        try {
-            // Call server to clear HttpOnly cookies and invalidate refresh token
-            await api.post('/auth/logout');
-        } catch (err) {
-            // Even if server call fails, clean up locally
-            console.error('Logout API error:', err);
-        }
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
         setUser(null);
-        router.push('/login');
+        window.location.href = '/api/auth/logout';
     };
 
-    // Route protection
+    // Route Protection and Onboarding Enforcement
     useEffect(() => {
-        if (!loading && !user && !pathname.includes('/login') && !pathname.includes('/register')) {
-            // router.push('/login');
+        if (loading || auth0Loading) return;
+
+        const isPublicPage = pathname === '/' || (pathname && pathname.startsWith('/api/auth'));
+
+        if (!auth0User && !isPublicPage) {
+            // User is not logged in
+            window.location.href = '/api/auth/login';
+            return;
         }
-    }, [user, loading, pathname, router]);
 
-    // Handle Encryption Keys
-    useEffect(() => {
-        const handleKeys = async () => {
-            if (user && !localStorage.getItem(`priv-${user._id}`)) {
-                console.log("Generating encryption keys...");
-                const keyPair = await EncryptionManager.generateKeyPair();
-                const pubJWK = await EncryptionManager.exportKey(keyPair.publicKey);
-                const privJWK = await EncryptionManager.exportKey(keyPair.privateKey);
-
-                localStorage.setItem(`pub-${user._id}`, pubJWK);
-                localStorage.setItem(`priv-${user._id}`, privJWK);
-
-                // Update server with public key
-                try {
-                    await api.patch('/users/update-public-key', { publicKey: pubJWK });
-                } catch (err) {
-                    console.error("Failed to sync public key:", err);
-                }
+        if (user) {
+            if (!user.role && pathname && pathname !== '/onboarding') {
+                router.push('/onboarding');
+            } else if (user.role && user.approvalStatus === 'PENDING' && pathname && pathname !== '/pending-approval') {
+                router.push('/pending-approval');
             }
-        };
-        if (user) handleKeys();
-    }, [user]);
-
+        }
+    }, [user, loading, auth0User, auth0Loading, pathname, router]);
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ user, loading: loading || auth0Loading, logout, isAuthenticated: !!user, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

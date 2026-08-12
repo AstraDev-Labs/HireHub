@@ -6,16 +6,10 @@ const { accountCreationLimiter, otpLimiter } = require('../middlewares/rateLimit
 
 const router = express.Router();
 
-router.post('/register', accountCreationLimiter, authController.register);
-router.get('/key', authController.getPublicKey);
-router.post('/login', authController.login);
-router.post('/logout', authMiddleware.protect, authController.logout);
-router.post('/refresh-token', authController.refreshToken);
-router.post('/forgot-password', authController.forgotPassword);
-router.patch('/reset-password/:token', authController.resetPassword);
-
-// OTP Routes
-router.post('/send-phone-otp', otpLimiter, otpController.sendPhoneOTP);
-router.post('/verify-phone-otp', otpLimiter, otpController.verifyPhoneOTP);
+router.post('/internal-sync', authController.internalSync);
+router.delete('/sync-delete', authController.syncDelete);
+router.post('/log-stream', authController.logStreamWebhook);
+router.post('/sync', authMiddleware.protect, authController.syncUser);
+router.patch('/onboard', authMiddleware.protect, authController.onboard);
 
 module.exports = router;

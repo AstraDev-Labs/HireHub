@@ -20,13 +20,13 @@ const notificationSchema = new mongoose.Schema({
     title: { type: String, required: true },
     message: { type: String, required: true },
     link: String,
-    read: { type: Boolean, default: false }
+    read: { type: Boolean, default: false, index: true }
 }, {
     timestamps: true
 });
 
-notificationSchema.statics.findByUserId = async function (userId) {
-    return this.find({ userId });
+notificationSchema.statics.findByUserId = async function (userId, { skip = 0, limit = 0, sort = { createdAt: -1 } } = {}) {
+    return this.find({ userId }).sort(sort).skip(skip).limit(limit);
 };
 
 notificationSchema.statics.findById = async function (id) {

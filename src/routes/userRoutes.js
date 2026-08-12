@@ -1,11 +1,15 @@
 const express = require('express');
 const userController = require('../controllers/userController');
+const authController = require('../controllers/authController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
 // Protect all routes
 router.use(authMiddleware.protect);
+
+// Onboarding
+router.patch('/onboard', authController.onboard);
 
 // Public Key Management (accessible to all authenticated users)
 router.patch('/update-public-key', userController.updatePublicKey);

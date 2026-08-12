@@ -15,7 +15,7 @@ const placementDriveSchema = new mongoose.Schema({
     companyName: { type: String, required: true },
     title: { type: String, required: true },
     description: String,
-    date: { type: String, required: true },
+    date: { type: String, required: true, index: true },
     time: String,
     venue: String,
     driveType: {
@@ -28,7 +28,8 @@ const placementDriveSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED'],
-        default: 'UPCOMING'
+        default: 'UPCOMING',
+        index: true
     },
     createdBy: String
 }, {
@@ -39,12 +40,12 @@ placementDriveSchema.statics.findById = async function (id) {
     try { return await this.findOne({ id }); } catch { return null; }
 };
 
-placementDriveSchema.statics.findAll = async function () {
-    return this.find();
+placementDriveSchema.statics.findAll = async function ({ skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find().sort(sort).skip(skip).limit(limit);
 };
 
-placementDriveSchema.statics.findByCompanyId = async function (companyId) {
-    return this.find({ companyId });
+placementDriveSchema.statics.findByCompanyId = async function (companyId, { skip = 0, limit = 0, sort = {} } = {}) {
+    return this.find({ companyId }).sort(sort).skip(skip).limit(limit);
 };
 
 const PlacementDrive = mongoose.model('PlacementDrive', placementDriveSchema);

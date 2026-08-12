@@ -47,7 +47,7 @@ export default function StudentsPage() {
                 setLoading(false);
             }
         };
-        if (user && ['ADMIN', 'STAFF', 'COMPANY'].includes(user.role)) {
+        if (user && user.role && ['ADMIN', 'STAFF', 'COMPANY'].includes(user.role)) {
             fetchStudents();
         }
     }, [user, router]);

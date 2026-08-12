@@ -66,7 +66,7 @@ export default function OffersPage() {
         setShowCreate(true);
     };
 
-    const isAdmin = user && ['ADMIN', 'STAFF'].includes(user.role);
+    const isAdmin = !!(user && user.role && ['ADMIN', 'STAFF'].includes(user.role));
     const isCompany = user?.role === 'COMPANY';
 
     const filteredStudents = students.filter(s =>

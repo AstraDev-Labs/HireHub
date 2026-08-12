@@ -40,12 +40,13 @@ module.exports = (err, req, res, _next) => {
     } else {
         let error = { ...err };
         error.message = err.message;
+        error.name = err.name; // name is on the prototype, spread doesn't copy it
 
-        if (error.name === 'Validation_error') error = handleDynamoDBValidationError(error);
+        if (error.name === 'Validation_error' || error.name === 'ValidationError') error = handleDynamoDBValidationError(error);
         if (error.name === 'CastError') error = handleCastErrorDB(error);
         if (error.code === 'ConditionalCheckFailedException') error = handleDynamoDBConditionalError();
-        if (error.name === 'JsonWebToken_error') error = handleJWTError();
-        if (error.name === 'TokenExpired_error') error = handleJWTExpiredError();
+        if (error.name === 'JsonWebTokenError') error = handleJWTError();
+        if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
 
         sendErrorProd(error, res);
     }

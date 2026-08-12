@@ -2,7 +2,7 @@ const OTP = require('../models/OTP');
 const User = require('../models/User');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
-const sendEmail = require('../utils/sendEmail');
+const { emailQueue } = require('../queues/emailQueue');
 
 // --- Phone OTP (sent via email for free) ---
 
@@ -31,7 +31,7 @@ exports.sendPhoneOTP = catchAsync(async (req, res, next) => {
     console.log(`[OTP] Generated code: ${otp.code}`);
 
     console.log('[OTP] Sending email via nodemailer...');
-    await sendEmail({
+    await emailQueue.add('sendEmail', {
         email,
         subject: 'CPMS — Email Verification Code',
         message: `Your email verification code is: ${otp.code}\n\nThis code expires in 5 minutes.`,

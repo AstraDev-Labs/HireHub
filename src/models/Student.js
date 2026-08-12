@@ -56,11 +56,13 @@ const studentSchema = new mongoose.Schema({
     },
     department: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     batchYear: {
         type: Number,
-        required: true
+        required: true,
+        index: true
     },
     cgpa: {
         type: Number,
@@ -109,17 +111,18 @@ studentSchema.statics.findByUserId = async function (userId) {
     return this.findOne({ userId });
 };
 
-studentSchema.statics.findAll = async function (filter = {}) {
-    return this.find(filter);
+studentSchema.statics.findAll = async function (filter = {}, { skip = 0, limit = 0 } = {}) {
+    return this.find(filter).skip(skip).limit(limit);
 };
 
 studentSchema.statics.countAll = async function (filter = {}) {
     return this.countDocuments(filter);
 };
 
-studentSchema.statics.searchByName = async function (query) {
+studentSchema.statics.searchByName = async function (query, { skip = 0, limit = 0 } = {}) {
     return this.find({ name: { $regex: query, $options: 'i' } })
-        .select('name email department batchYear phone id');
+        .select('name email department batchYear phone id')
+        .skip(skip).limit(limit);
 };
 
 const Student = mongoose.model('Student', studentSchema);
