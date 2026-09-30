@@ -29,7 +29,8 @@ interface StudentDetail {
 }
 
 export default function StudentDetailPage() {
-    const { id } = useParams();
+    const params = useParams();
+    const id = params?.id as string;
     const { user } = useAuth();
     const router = useRouter();
     const [student, setStudent] = useState<StudentDetail | null>(null);

@@ -15,7 +15,8 @@ import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 
 export default function CompanyDetailsPage() {
-    const { id } = useParams();
+    const params = useParams();
+    const id = params?.id as string;
     const router = useRouter();
     const { user } = useAuth();
 

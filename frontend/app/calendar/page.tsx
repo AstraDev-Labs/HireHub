@@ -58,13 +58,13 @@ export default function CalendarPage() {
     const [showCreate, setShowCreate] = useState(false);
     const [form, setForm] = useState({ companyId: '', title: '', description: '', date: '', time: '', venue: '', driveType: 'ON_CAMPUS', minCgpa: 0 });
 
-    const isAdmin = user && ['ADMIN', 'STAFF'].includes(user.role);
+    const isAdmin = !!(user && user.role && ['ADMIN', 'STAFF'].includes(user.role));
     const isCompany = user?.role === 'COMPANY';
     const isStudent = user?.role === 'STUDENT';
 
     useEffect(() => {
         fetchDrives();
-        if (user && ['ADMIN', 'STAFF', 'COMPANY'].includes(user.role)) fetchCompanies();
+        if (user && user.role && ['ADMIN', 'STAFF', 'COMPANY'].includes(user.role)) fetchCompanies();
         if (user && user.role === 'STUDENT') fetchApplications();
     }, [user]);
 

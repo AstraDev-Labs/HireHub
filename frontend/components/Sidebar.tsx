@@ -102,12 +102,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
             href: '/drives',
             roles: ['ADMIN', 'STAFF', 'COMPANY', 'STUDENT', 'PARENT'],
         },
-        {
-            label: 'Coding Challenges',
-            icon: Code2,
-            href: '/challenges',
-            roles: ['ADMIN', 'STAFF', 'STUDENT', 'PARENT'],
-        },
+
         {
             label: 'Reports',
             icon: FileLineChart,
@@ -128,7 +123,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
         }
     ];
 
-    const filteredRoutes = routes.filter(route => user && route.roles.includes(user.role));
+    const filteredRoutes = routes.filter(route => !!(user && user.role && route.roles.includes(user.role)));
 
     return (
         <div className="flex flex-col h-full bg-slate-900 dark:bg-slate-950 text-white overflow-hidden">

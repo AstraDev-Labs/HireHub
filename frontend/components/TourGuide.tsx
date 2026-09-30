@@ -48,14 +48,7 @@ export default function TourGuide() {
                         side: "right", align: 'start'
                     }
                 },
-                {
-                    element: '[data-tour="sidebar-challenges"]',
-                    popover: {
-                        title: 'Practice Coding',
-                        description: 'Sharpen your skills with our built-in coding platform before technical interviews.',
-                        side: "right", align: 'start'
-                    }
-                },
+
                 {
                     element: '[data-tour="sidebar-resume-builder"]',
                     popover: {

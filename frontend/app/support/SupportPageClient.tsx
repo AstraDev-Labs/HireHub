@@ -40,7 +40,7 @@ const faqs = [
   },
   {
     question: "How do I prepare for a technical interview on HireHub?",
-    answer: "You can visit the 'Resources' section to find study materials or the 'Challenges' section to practice coding problems commonly asked by top companies."
+    answer: "You can visit the 'Resources' section to find study materials to prepare for interviews commonly asked by top companies."
   },
   {
     question: "Is there a limit to how many drives I can apply for?",

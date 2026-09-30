@@ -9,7 +9,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: [
                 '/',
                 '/companies',
-                '/challenges',
                 '/about',
                 '/contact',
             ],

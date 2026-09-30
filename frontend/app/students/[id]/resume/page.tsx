@@ -54,6 +54,7 @@ interface Profile {
 
 export default function StudentResumePage() {
     const params = useParams();
+    const id = params?.id as string;
     const router = useRouter();
     const { user } = useAuth();
 
@@ -63,11 +64,11 @@ export default function StudentResumePage() {
     useEffect(() => {
         if (!user) return;
         fetchStudentProfile();
-    }, [user, params.id]);
+    }, [user, id]);
 
     const fetchStudentProfile = async () => {
         try {
-            const { data } = await api.get(`/students/${params.id}`);
+            const { data } = await api.get(`/students/${id}`);
             const student = data.data.student;
 
             // Format the skills array if it exists as string logic inside

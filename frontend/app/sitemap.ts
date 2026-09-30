@@ -2,7 +2,6 @@ import { MetadataRoute } from 'next';
 
 // Define the structure since we can't easily share the mongoose models here in Edge
 interface Company { _id: string; updatedAt?: string; }
-interface Challenge { _id: string; updatedAt?: string; }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
@@ -44,30 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 console.error("Failed to parse companies JSON:", e);
             }
         }
-
-        // Fetch Public Challenges
-        const challengesRes = await fetch(`${backendUrl}/challenges`, { 
-            next: { revalidate: 3600 },
-            headers: { 'Accept': 'application/json' }
-        });
-        
-        let challengeRoutes: MetadataRoute.Sitemap = [];
-        if (challengesRes.ok && challengesRes.headers.get('content-type')?.includes('application/json')) {
-            try {
-                const data = await challengesRes.json();
-                const challenges: Challenge[] = data.data?.challenges || [];
-                challengeRoutes = challenges.map((challenge) => ({
-                    url: `${baseUrl}/challenges/${challenge._id}`,
-                    lastModified: challenge.updatedAt || new Date().toISOString(),
-                    changeFrequency: 'weekly' as const,
-                    priority: 0.7,
-                }));
-            } catch (e) {
-                console.error("Failed to parse challenges JSON:", e);
-            }
-        }
-
-        return [...staticRoutes, ...companyRoutes, ...challengeRoutes];
+        return [...staticRoutes, ...companyRoutes];
     } catch (error) {
         console.error("Sitemap generation caught top-level error:", error);
         // Fallback to static routes if dynamic fetching fails

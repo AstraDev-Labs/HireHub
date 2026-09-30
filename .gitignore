@@ -14,3 +14,10 @@ yarn-error.log
 !frontend/**/*.js
 !scripts/**/*.js
 
+
+hirehub-db-new/
+hirehub-codeql-db/
+*.ql
+*.bqrs
+*.csv
+
